@@ -31,6 +31,8 @@ ALLOWED_HOSTS = ['*']
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
+    'channels',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -71,7 +73,8 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'IOT_Dashboard.wsgi.application'
+# WSGI_APPLICATION = 'IOT_Dashboard.wsgi.application'
+ASGI_APPLICATION = 'IOT_Dashboard.asgi.application'
 
 
 # Database

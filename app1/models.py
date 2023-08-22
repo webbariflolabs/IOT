@@ -15,10 +15,10 @@ class User(models.Model):
         return name
 
 class Account(models.Model):
-    id=models.IntegerField()
     account_name = models.CharField(max_length=100)
     Account_id = models.IntegerField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='accounts')
+    
     def __str__(self):
         data=f"{self.account_name}"
         return data
@@ -31,12 +31,11 @@ class DeviceType(models.Model):
           return name
 
 class Device(models.Model):
+    device_id = models.IntegerField()
     device_name = models.CharField(max_length=100)
+    account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name='accounts')
     device_type = models.ForeignKey(DeviceType, on_delete=models.Aggregate, related_name='device_type')
-    account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name='devices')
-    def __str__(self):
-        data=f"{self.device_name}   &   {self.device_type}"
-        return data
+
 
 class Data(models.Model):
     timestamp = models.DateTimeField()
@@ -46,5 +45,8 @@ class Data(models.Model):
         data=f"{self.device}"
         return data
 
-
-
+class CustomPermission(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='permission')
+    user_create = models.BooleanField(default=False)
+    user_edit = models.BooleanField(default=False)
+    user_delete = models.BooleanField(default=False)
