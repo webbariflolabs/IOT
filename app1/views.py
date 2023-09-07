@@ -1,17 +1,18 @@
 from rest_framework import viewsets
-# from django.contrib.auth.models import Permission
-from .serializers import PermissionSerializer
+from .serializers import PermissionSerializer,DeviceSerializer,DeviceTypeserializers
 from django.shortcuts import render
 from rest_framework.parsers import JSONParser
 from django.http import HttpResponse,HttpRequest,JsonResponse
-from app1.models import User,Account,Device,DeviceType,CustomPermission
+from app1.models import User,Account,Device,DeviceType,CustomPermission,Parameter
 from django.views.decorators.csrf import csrf_exempt
 from django.middleware.csrf import get_token
 import random
-from django.db.models import Q
-from django.core.exceptions import ObjectDoesNotExist
-from .serializers import Accountserializers
-from django.db import transaction
+from django.utils import timezone
+from datetime import timedelta
+import pandas as pd
+from django.shortcuts import get_object_or_404
+from datetime import datetime
+import os
 
 # Create your views here.
 
@@ -77,18 +78,20 @@ def account_create(request):
 def user_create(request):
     if request.method=="POST":
        user = JSONParser().parse(request)
-       name=user.get('name')
+       fname=user.get('firstname')
+       lname=user.get('lastname')
        email=user.get('email')
        mobno=user.get('mobileno')
        password=user.get('password')
        usertype=user.get('usertype')
+       fullname = fname+" "+lname
        try:
             if not User.objects.filter(Mobno=mobno).exists():
-                user=User(Name=name,Email=email,Mobno=mobno,password=password,user_type=usertype)
+                user=User(Name=fullname,Email=email,Mobno=mobno,password=password,user_type=usertype)
                 user.save()
                 return JsonResponse({"message":"User Created"})
             else:
-                return JsonResponse({"message":"User alredy exist,Report to Admin"})
+                return JsonResponse({"message":"User already exists,Report to Admin"})
        except Exception as e:
              return JsonResponse({'error': str(e)}, status=500)
        
@@ -106,16 +109,26 @@ def account_edit(request):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
             
-
+@csrf_exempt
+def account_delete(request):
+    if request.method=='POST':
+        account=JSONParser().parse(request)
+        accountid=account.get('accountid')
+        print(accountid)
+        try:
+            get_accountdata=Account.objects.get(Account_id=accountid)
+            print(get_accountdata)
+            get_accountdata.delete()
+            return JsonResponse({"message":"Account deleted successfully"})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
 
 @csrf_exempt
-def account_view(request):
+def account_view(request,mobno):
     try:
         if request.method == 'GET':
-            accounts=JSONParser().parse(request)
-            mobile_no=accounts.get('mobileno')
-            list=Account.objects.filter(user=mobile_no)
-            final_list = [list.account_name for list in list]
+            list=Account.objects.filter(user=mobno)
+            final_list = [(list.account_name,list.Account_id) for list in list]
             if final_list:
                 return JsonResponse({"items":final_list})
             else:
@@ -239,34 +252,234 @@ def device_delete(request):
             return JsonResponse({'error': str(e)}, status=500)
 
 
-@csrf_exempt
-def device_view(request):
-    if request.method=="GET":
-        device=JSONParser().parse(request)
-        account_id=device.get('accountid')
+@csrf_exempt 
+def device_view(request,account_id):
     try:
-        device_list=Device.objects.filter(account=account_id)
-        final_list=[list.device_name for list in device_list]
-        if final_list:
-            return JsonResponse({"result":final_list})
-        else:
-            return JsonResponse({'error': 'Device does not exists'}, status=400)
+        if request.method=="GET":
+            device_list=Device.objects.filter(account=account_id)
+            device_type_list = [(device.device_id,device.device_name,(device.device_type.Name)) for device in device_list]
+            return JsonResponse({"result": device_type_list})    
     except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
-    
+
 @csrf_exempt
-def permission_save(request):
+def permission_save(request,user_id):
     if request.method=="POST":
         device=JSONParser().parse(request)
         usercreate = device.get('usercreate')
         useredit = device.get('useredit')
         userdelete = device.get('userdelete')
-        user = device.get('username')
-        user1 = User.objects.get(Mobno=user)
-        datasave=CustomPermission(user_create=usercreate,user_edit=useredit,user_delete=userdelete,user=user1)
-        datasave.save()
-        print("save")
-        return JsonResponse({"message":"saved"})
+        userview = device.get('userview')
+        accountcreate = device.get('accountcreate')
+        accountedit = device.get('accountedit')
+        accountdelete = device.get('accountdelete')
+        accountview = device.get('accountview')
+        devicecreate = device.get('devicecreate')
+        deviceedit = device.get('deviceedit')
+        devicedelete = device.get('devicedelete')
+        deviceview = device.get('deviceview')
+        deviceinstruction = device.get('deviceinstruction')
+        setting = device.get('setting')
+        print(setting)
+        if CustomPermission.objects.filter(user=user_id).exists():
+            user_dlt = CustomPermission.objects.filter(user=user_id)
+            user_dlt.delete()
+            print("yes available")
+            CustomPermission.objects.filter(user=user_id)
+            userid = User.objects.get(Mobno=user_id)
+            datasave=CustomPermission(user=userid,User_create=usercreate,User_edit=useredit,User_delete=userdelete,User_views=userview,Account_create=accountcreate,Account_edit=accountedit,Account_delete=accountdelete,Account_views=accountview,Device_create=devicecreate,Device_edit=deviceedit,Device_delete=devicedelete,Device_views=deviceview,Device_instruction=deviceinstruction,Setting=setting)
+            datasave.save()
+            return JsonResponse({"message":"saved"})
+        else:
+            userid = User.objects.get(Mobno=user_id)
+            datasave=CustomPermission(user=userid,User_create=usercreate,User_edit=useredit,User_delete=userdelete,User_views=userview,Account_create=accountcreate,Account_edit=accountedit,Account_delete=accountdelete,Account_views=accountview,Device_create=devicecreate,Device_edit=deviceedit,Device_delete=devicedelete,Device_views=deviceview,Device_instruction=deviceinstruction,Setting=setting)
+            datasave.save()
+            return JsonResponse({"message":"saved"})
+
+    elif request.method=="GET":
+        user = get_object_or_404(User, Mobno=user_id)
+        permission = CustomPermission.objects.get(user=user)
+
+        response_data = {
+            'user_create' : permission.User_create,
+            'user_edit' : permission.User_edit,
+            'user_delete' : permission.User_delete,
+            'user_view' : permission.User_views,
+            'account_create' : permission.Account_create,
+            'account_edit' : permission.Account_edit,
+            'account_delete' : permission.Account_delete,
+            'account_view' : permission.Account_views,
+            'device_create' : permission.Device_create,
+            'device_edit' : permission.Device_edit,
+            'device_delete' : permission.Device_delete,
+            'device_view' : permission.Device_views,
+            'deviceinstruction' : permission.Device_instruction,
+            'settings' : permission.Setting,
+        }
+        return JsonResponse({"message":response_data})
+    
+@csrf_exempt
+def datefilter(request,device_id):
+    data={
+        'data':None,
+        }
+    if request.method=="GET":
+        user_instance=JSONParser().parse(request)
+        user_given_day=user_instance.get('day')
+        data_type=user_instance.get('data_type')
+        diff_time = timezone.now()-timedelta(days=user_given_day)    
+
+        result = Parameter.objects.filter(date__gte=diff_time,device=device_id,param_type=data_type)
+        obj = [dt.param_value for dt in result]
+        data['data']=obj
+        
+        return JsonResponse({"message":data})
+            
+
+@csrf_exempt
+def custom_datefilter(request,device_id):
+    data={
+        'data':None,
+        }
+    if request.method == "GET":
+        user_instance = JSONParser().parse(request)
+        start_date = user_instance.get('from')
+        end_date = user_instance.get('to')
+        data_type = user_instance.get('data_type')
+
+        records = Parameter.objects.filter(date__range=(start_date, end_date),device=device_id,param_type=data_type)
+        obj = [record.param_value for record in records]
+        
+        data['data'] = obj
+           
+        return JsonResponse({"message":data})
+            
+
+
+@csrf_exempt
+def download_excel(request,device_id):
+    if request.method == "GET":
+        data = JSONParser().parse(request)
+        start_date = data.get('from')
+        end_date = data.get('to')
+        data_type = data.get('data_type')
+
+        records = Parameter.objects.filter(date__range=(start_date, end_date),device=device_id,param_type=data_type)
+
+        id = [record.device.device_id for record in records]
+        data = [record.param_value for record in records]
+        
+        dict_data = {
+            "Device_id":id,
+            "Data" : data
+        }
+        final_result = pd.DataFrame(dict_data)
+
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename=f"{data_type}_data.csv"'
+
+        final_result.to_csv(response, index=False)
+
+        return response
+    
+
+@csrf_exempt
+def fixed_date_data_download(request,device_id):
+    if request.method == "GET":
+        data = JSONParser().parse(request)
+        day = data.get('day')
+        data_type = data.get('data_type')
+        diff_time=timezone.now()-timedelta(days=day)
+
+        result = Parameter.objects.filter(date__gte=diff_time,device=device_id,param_type=data_type)
+        data = [dt.param_value for dt in result]
+        id = [dt.device.device_id for dt in result]
+
+        dict_data={
+            "Device_id":id,
+            "Data":data
+            } 
+        final_result = pd.DataFrame(dict_data)
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename=f"{data_type}_data.csv"'
+
+        final_result.to_csv(response, index=False)
+
+        return response
+           
+            
+@csrf_exempt
+def devicetype_create(request):
+    if request.method=="POST":
+        devicetype=JSONParser().parse(request)
+        typename=devicetype.get('typename')
+        typeversion=devicetype.get('typeversion')
+        try:
+            if not DeviceType.objects.filter(Name=typename, version=typeversion).exists():
+                data_save = DeviceType(Name=typename,version=typeversion)
+                data_save.save()
+                return JsonResponse({"message":"Devicetype Created"})
+            else:
+                return JsonResponse({"message":"Devicetype already exists"})
+            
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+        
+@csrf_exempt
+def devicetype_edit(request):
+    if request.method == "POST":
+        devicetype=JSONParser().parse(request)
+        old_device_type_name=devicetype.get('olddevicetypename')
+        old_device_type_version=devicetype.get('olddevicetypeversion')
+        new_typename=devicetype.get('newtypename')
+        new_typeversion=devicetype.get('newtypeversion')
+        print(new_typename)
+        try:
+            instance = DeviceType.objects.get(Name=old_device_type_name,version=old_device_type_version)
+            print("instancee",instance)
+            instance.Name = new_typename
+            instance.version = new_typeversion
+            if not DeviceType.objects.filter(Name=new_typename,version=new_typeversion).exists():
+                instance.save()
+                return JsonResponse({"message":"Saved"})
+            else:
+                return JsonResponse({"message":"Devicetype already exists,Rename it"})
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500) 
+
+@csrf_exempt
+def devicetype_view(request):
+    if request.method=="GET":
+        devicetype = DeviceType.objects.all()
+        result = [(i.Name,i.version) for i in devicetype]
+        return JsonResponse({"results":result})
+    
+@csrf_exempt
+def devicetype_delete(request):
+    if request.method=="POST":
+        devicetype=JSONParser().parse(request)
+        devicetype_name=devicetype.get('devicetypename')
+        devicetype_version=devicetype.get('devicetypeversion')
+        device_dlt = DeviceType.objects.filter(Name=devicetype_name,version=devicetype_version)
+        device_dlt.delete()
+        return JsonResponse({"message":"Devicetype deleted"})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
