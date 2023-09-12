@@ -74,7 +74,7 @@ TEMPLATES = [
     },
 ]
 
-# WSGI_APPLICATION = 'IOT_Dashboard.wsgi.application'
+WSGI_APPLICATION = 'IOT_Dashboard.wsgi.application'
 ASGI_APPLICATION = 'IOT_Dashboard.asgi.application'
 
 

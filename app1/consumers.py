@@ -6,7 +6,7 @@ from datetime import datetime
 from django.utils import timezone
 from django.http import JsonResponse
 import json
-from app1.management.commands.mqtt_listener import Command
+
 class MySyncConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.user_id = self.scope['url_route']['kwargs']['user_id']  # Extract user_id from the URL
@@ -14,7 +14,7 @@ class MySyncConsumer(AsyncWebsocketConsumer):
 
         while True:
             data = await self.get_data()  # No need to pass user_id here
-            await self.send(data)
+            await self.send(json.dumps(data))
 
             await asyncio.sleep(60)
 
@@ -26,18 +26,19 @@ class MySyncConsumer(AsyncWebsocketConsumer):
         "Ph": None,
         "CPU_TEMPERATURE": None,
         "Current": None,
-        "voltage": None
+        "voltage": None,
+        "Time" : None,
     }
         obj =Parameter.objects.filter(device_id=self.user_id)
         if not obj:
-            # return JsonResponse({"error": "No user found with the given ID"})
+
             print("No user found with the given ID")
 
         current_time = datetime.now().strftime("%H:%M")
         for user in obj:
         
             user_time_str = user.time.strftime("%H:%M")
-            seven_minutes_ago = timezone.localtime(timezone.now()) - timezone.timedelta(minutes=7)
+            seven_minutes_ago = timezone.localtime(timezone.now()) - timezone.timedelta(minutes=60)
 
             
             print("Current Time:", current_time)
@@ -51,6 +52,8 @@ class MySyncConsumer(AsyncWebsocketConsumer):
                 cpu_obj = Parameter.objects.filter(device_id=self.user_id, param_type="CPU_TEMPERATURE",time__gte=seven_minutes_ago)
                 curr_obj = Parameter.objects.filter(device_id=self.user_id, param_type="Current",time__gte=seven_minutes_ago)
                 volt_obj = Parameter.objects.filter(device_id=self.user_id, param_type="voltage",time__gte=seven_minutes_ago)
+                time_obj = Parameter.objects.filter(device_id=self.user_id,time__gte=seven_minutes_ago)
+                
 
                 if orp_obj:
                     data["ORP"] = [i.param_value for i in orp_obj]
@@ -64,11 +67,14 @@ class MySyncConsumer(AsyncWebsocketConsumer):
                     data["Current"] = [i.param_value for i in curr_obj]
                 if volt_obj:
                     data["voltage"] = [i.param_value for i in volt_obj]
+                if time_obj:
+                    a = []
+                    for i in time_obj:
+                        if (i.time.strftime('%H:%M')) not in a:
+                            a.append(i.time.strftime('%H:%M'))
+                            data["Time"] = a
 
-                data_json = json.dumps(data)
-
-                if data_json:
-                    return data_json
+                return data
             return ''
 
     @sync_to_async

@@ -30,23 +30,21 @@ def login(request):
        password=userdata.get('password')
        try:
             users=User.objects.get(Mobno=phone)
-            print(users.Mobno)
-            print(users.password)
-            print(users.user_type)
             if phone == users.Mobno and users.user_type == "general":
                 print("yessss")
                 if phone == users.Mobno and password != users.password:
                     return JsonResponse("Invalid Password For General User",safe=False)
                 elif phone == users.Mobno and password == users.password:
-                    return JsonResponse("Login Successful For General User",safe=False)
+                    return JsonResponse({"Login Successful For General User" : users.Name},safe=False)
             elif phone == users.Mobno and users.user_type == "admin":
                  if phone == users.Mobno and password != users.password:
                      return JsonResponse("Invalid Password For Admin",safe=False)
                  elif phone == users.Mobno and password == users.password:
-                     return JsonResponse("Login Successful For Admin",safe=False)
+                     return JsonResponse({"Login Successful For Admin" : users.Name},safe=False)
        except:
             return JsonResponse("Invalid Credentials",safe=False)
-       
+
+
 @csrf_exempt
 def account_create(request):
     if request.method == 'POST':
