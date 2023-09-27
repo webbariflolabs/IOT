@@ -12,7 +12,10 @@ from datetime import timedelta
 import pandas as pd
 from django.shortcuts import get_object_or_404
 from datetime import datetime
-import os
+from paho.mqtt.client import Client
+import json
+import jwt  
+from django.conf import settings  
 
 # Create your views here.
 
@@ -22,7 +25,7 @@ import os
 #    csrf_token1=get_token(request)
 #    return JsonResponse({"csrf_token":csrf_token1})
 
-@csrf_exempt
+@csrf_exempt        
 def login(request):
     if request.method == 'POST':
        userdata=JSONParser().parse(request)
@@ -30,17 +33,25 @@ def login(request):
        password=userdata.get('password')
        try:
             users=User.objects.get(Mobno=phone)
+            # print(users.Mobno)
+            # print(users.password)
+            # print(users.user_type)
+            # jwt_secret_key = "your-jwt-secret-key"
+            # payload = {
+            #         'mobileno': users.Mobno
+            #     }
+            # token = jwt.encode(payload, jwt_secret_key, algorithm='HS256')
             if phone == users.Mobno and users.user_type == "general":
                 print("yessss")
                 if phone == users.Mobno and password != users.password:
                     return JsonResponse("Invalid Password For General User",safe=False)
                 elif phone == users.Mobno and password == users.password:
-                    return JsonResponse({"Login Successful For General User" : users.Name},safe=False)
+                    return JsonResponse({'message':"Login Successfull For General User",'username':users.Name},safe=False)
             elif phone == users.Mobno and users.user_type == "admin":
                  if phone == users.Mobno and password != users.password:
                      return JsonResponse("Invalid Password For Admin",safe=False)
                  elif phone == users.Mobno and password == users.password:
-                     return JsonResponse({"Login Successful For Admin" : users.Name},safe=False)
+                     return JsonResponse({'message':"Login Successfull For Admin User",'username':users.Name},safe=False)
        except:
             return JsonResponse("Invalid Credentials",safe=False)
 
@@ -141,7 +152,7 @@ def user_view(request):
     try:
         if request.method == 'GET':
             list=User.objects.all()
-            final_list1 = [(list.Name,list.Mobno,list.user_type) for list in list]
+            final_list1 = [(list.Name,list.Mobno,list.user_type,list.Email) for list in list]
             return JsonResponse({"items":final_list1})
         else:
             pass
@@ -463,6 +474,406 @@ def devicetype_delete(request):
         device_dlt.delete()
         return JsonResponse({"message":"Devicetype deleted"})
 
+@csrf_exempt
+def on_off_controls(request):
+    cntrl_data1 ={
+        "button":{
+            "display_name":None,
+            "virtual_pin":None,
+            "allow_user":None
+            }
+        }
+    if request.method == 'POST':
+        instance = JSONParser().parse(request)
+        type_name = instance.get('type_name')
+        type_ver = instance.get('type_ver')
+        btn_dis = instance.get('btn_dis_name') if instance.get('btn_dis_name') else None
+        btn_pin = instance.get('btn_pin') if instance.get('btn_pin') else None
+        alw_usr = instance.get('alw_usr') if instance.get('alw_usr') else None
+
+        instance = DeviceType.objects.get(Name=type_name,version=type_ver)
+        if instance.controls == None:
+            cntrl_data1['button']['display_name']=btn_dis
+            cntrl_data1['button']['virtual_pin']=btn_pin
+            cntrl_data1['button']['allow_user']=alw_usr
+            instance.delete()
+            lis = []
+            lis.append(cntrl_data1)
+            instance.controls= lis
+            instance.save()
+            return JsonResponse({"message":"PIN assigned with a value in ON/OFF button"})
+
+        key_list = []
+        a = instance.controls
+        if a:
+            for dictionary in a:
+                for key in dictionary.keys():
+                    key_list.append(key)
+            if 'button' not in key_list:
+                cntrl_data1['button']['display_name']=btn_dis
+                cntrl_data1['button']['virtual_pin']=btn_pin
+                cntrl_data1['button']['allow_user']=alw_usr
+                lis = instance.controls
+                lis.append(cntrl_data1)
+                instance.controls = lis
+                instance.save()
+                return JsonResponse({"message":"PIN assigned with a value in ON/OFF button"})
+            elif 'button' in key_list: 
+                vir_pin_list = []
+                obj = instance.controls
+                for dictionary in obj:
+                    if 'button' in dictionary and 'virtual_pin' in dictionary['button']:
+                        values = dictionary['button']['virtual_pin']
+                        vir_pin_list.append(values)
+                if btn_pin not in vir_pin_list:
+                    cntrl_data1['button']['display_name']=btn_dis
+                    cntrl_data1['button']['virtual_pin']=btn_pin
+                    cntrl_data1['button']['allow_user']=alw_usr
+                    lis = instance.controls
+                    lis.append(cntrl_data1)
+                    instance.controls = lis
+                    instance.save()
+                    return JsonResponse({"message":"PIN assigned with a value in ON/OFF button"})
+                else:
+                    return JsonResponse({"error":"PIN already assigned with a value in ON/OFF button"})
+            else:
+                return JsonResponse({"error":"PIN already assigned with a value in ON/OFF button"})
+
+@csrf_exempt
+def slider_controls(request):
+    cntrl_data2 ={
+        "slider":{
+            "display_name":None,
+            "virtual_pin":None,
+            "min":None,
+            "max":None,
+            "step_value":None,
+            "allow_user":None
+            }
+    }
+    if request.method == 'POST':
+        instance = JSONParser().parse(request)
+        type_name = instance.get('type_name')
+        type_ver = instance.get('type_ver')
+        slider_dis = instance.get('slider_dis_name') if instance.get('slider_dis_name') else None
+        slider_pin = instance.get('slider_pin') if instance.get('slider_pin') else None
+        slider_min = instance.get('slider_min') if instance.get('slider_min') else None
+        slider_max = instance.get('slider_max') if instance.get('slider_max') else None
+        slider_step_value = instance.get('slider_step_value') if instance.get('slider_step_value') else None
+        slider_allow_user = instance.get('slider_allow_user') if instance.get('slider_allow_user') else None
+        instance = DeviceType.objects.get(Name=type_name,version=type_ver)
+        a = instance.controls
+        print(slider_pin)
+
+        if a == None:
+            cntrl_data2['slider']['display_name']=slider_dis
+            cntrl_data2['slider']['virtual_pin']=slider_pin
+            cntrl_data2['slider']['min']=slider_min
+            cntrl_data2['slider']['max']=slider_max
+            cntrl_data2['slider']['step_value']=slider_step_value
+            cntrl_data2['slider']['allow_user']=slider_allow_user
+            instance.delete()
+            lis = []
+            lis.append(cntrl_data2)
+            instance.controls= lis
+            instance.save()
+            return JsonResponse({"message":"PIN assigned with a value in slider in None condition"})
+
+        if a:
+            avlbl_lst = []
+            for i in a:
+                for key in i.keys():
+                    avlbl_lst.append(key)
+            if 'slider' not in avlbl_lst:
+                cntrl_data2['slider']['display_name']=slider_dis
+                cntrl_data2['slider']['virtual_pin']=slider_pin
+                cntrl_data2['slider']['min']=slider_min
+                cntrl_data2['slider']['max']=slider_max
+                cntrl_data2['slider']['step_value']=slider_step_value
+                cntrl_data2['slider']['allow_user']=slider_allow_user
+                lis = a
+                lis.append(cntrl_data2)
+                instance.controls= lis
+                instance.save()
+                return JsonResponse({"message":"PIN assigned with a value in slider"})
+
+            elif 'slider' in avlbl_lst:
+                obj = instance.controls
+                vir_pin = []
+                for dictionary in obj:
+                    if 'slider' in dictionary and 'virtual_pin' in dictionary['slider']:
+                        values = dictionary['slider']['virtual_pin']
+                        vir_pin.append(values)
+                if slider_pin not in vir_pin:
+                    cntrl_data2['slider']['display_name']=slider_dis
+                    cntrl_data2['slider']['virtual_pin']=slider_pin
+                    cntrl_data2['slider']['min']=slider_min
+                    cntrl_data2['slider']['max']=slider_max
+                    cntrl_data2['slider']['step_value']=slider_step_value
+                    cntrl_data2['slider']['allow_user']=slider_allow_user
+                    lis = a
+                    lis.append(cntrl_data2)
+                    instance.controls= lis
+                    instance.save()
+                    return JsonResponse({"message":"PIN assigned with a value in slider"})
+                else:
+                    return JsonResponse({"message":"PIN already assigned with a value in slider"})
+            else:
+                return JsonResponse({"error":"PIN already assigned with a in slider"})
+
+@csrf_exempt
+def graph_controls(request):
+    cntrl_data3 ={
+        "graph":{
+            "display_name":None,
+            "label":None,
+            "color":None,
+            "allow_user":None
+        }
+    }
+    if request.method == 'POST':
+        instance = JSONParser().parse(request)
+        type_name = instance.get('type_name')
+        type_ver = instance.get('type_ver')
+        graph_dis = instance.get('graph_dis_name') if instance.get('graph_dis_name') else None
+        graph_label = instance.get('graph_label') if instance.get('graph_label') else None
+        graph_color = instance.get('graph_color') if instance.get('graph_color') else None
+        alw_usr = instance.get('graph_allow_user') if instance.get('graph_allow_user') else None
+        instance = DeviceType.objects.get(Name=type_name,version=type_ver)
+        a = instance.controls
+
+        if a == None:
+            cntrl_data3['graph']['display_name']=graph_dis
+            cntrl_data3['graph']['label']=graph_label
+            cntrl_data3['graph']['color']=graph_color
+            cntrl_data3['graph']['allow_user']=alw_usr
+            instance.delete()
+            lis = []
+            lis.append(cntrl_data3)
+            instance.controls= lis
+            instance.save()
+            return JsonResponse({"message":"New Line graph created"})
+        elif a:
+            avlbl_lst = []
+            for i in a:
+                for key in i.keys():
+                    avlbl_lst.append(key) 
+            if 'graph' not in avlbl_lst:
+                cntrl_data3['graph']['display_name']=graph_dis
+                cntrl_data3['graph']['label']=graph_label
+                cntrl_data3['graph']['color']=graph_color
+                cntrl_data3['graph']['allow_user']=alw_usr
+                lis = a
+                lis.append(cntrl_data3)
+                instance.controls = lis
+                instance.save()
+                return JsonResponse({"message":"New Line graph created"})
+            elif 'graph' in avlbl_lst:
+                label_list = []
+                for dictionary in a:
+                    if 'graph' in dictionary and 'label' in dictionary['graph']:
+                        values = dictionary['graph']['label']
+                        label_list.append(values)
+                if graph_label not in label_list:
+                    cntrl_data3['graph']['display_name']=graph_dis
+                    cntrl_data3['graph']['label']=graph_label
+                    cntrl_data3['graph']['color']=graph_color
+                    cntrl_data3['graph']['allow_user']=alw_usr
+                    lis = a
+                    lis.append(cntrl_data3)
+                    instance.controls = lis
+                    instance.save()
+                    return JsonResponse({"message":"New Line graph created"})
+                else:
+                    return JsonResponse({"message":"Line graph label already assigned"})
+        else:
+            return JsonResponse({"error":"Line graph label already assigned"})
+
+@csrf_exempt
+def controls_view(request,type_name,type_ver):
+    if request.method == 'GET':
+        instance = DeviceType.objects.get(Name=type_name,version=type_ver)
+        a = instance.controls
+        return JsonResponse(a,safe=False)
+
+
+@csrf_exempt
+def control_delete(request):
+    if request.method == 'POST':
+        delete_instance = JSONParser().parse(request)
+        type_name = delete_instance.get('type_name')
+        type_ver = delete_instance.get('type_ver')
+        display_name = delete_instance.get('display_name')
+        virtual_pin = delete_instance.get('virtual_pin')
+        instance = DeviceType.objects.get(Name=type_name,version=type_ver)
+        a = instance.controls
+        lists = []
+        for dict_list in a:
+            lists.append(dict_list)
+        for dict in lists:
+            if 'button' in dict and 'display_name' in dict['button']:
+                if 'button' in dict and 'virtual_pin' in dict['button']:
+                    values1 = dict['button']['display_name']
+                    values2 = dict['button']['virtual_pin']
+                if display_name == values1 and virtual_pin == values2:
+                    lists.remove(dict)
+                    if len(lists) >= 1:
+                        instance.controls = lists
+                        instance.save()
+                        return JsonResponse({"message":"Removed"})
+                    else:
+                        instance.controls = None
+                        instance.save()
+                        return JsonResponse({"message":"Removed"})
+            if 'slider' in dict and 'display_name' in dict['slider']:
+                if 'slider' in dict and 'virtual_pin' in dict['slider']:
+                    values1 = dict['slider']['display_name']
+                    values2 = dict['slider']['virtual_pin']
+                if display_name == values1 and virtual_pin == values2:
+                    lists.remove(dict)
+                    if len(lists) >= 1:
+                        instance.controls = lists
+                        instance.save()
+                        return JsonResponse({"message":"Removed"})
+                    else:
+                        instance.controls = None
+                        instance.save()
+                        return JsonResponse({"message":"Removed"})
+            if 'graph' in dict and 'display_name' in dict['graph']:
+                if 'graph' in dict and 'label' in dict['graph']:
+                    values1 = dict['graph']['display_name']
+                    values2 = dict['graph']['label']
+                if display_name == values1 and virtual_pin == values2:
+                    lists.remove(dict)
+                    if len(lists) >= 1:
+                        instance.controls = lists
+                        instance.save()
+                        return JsonResponse({"message":"Removed"})
+                    else:
+                        instance.controls = None
+                        instance.save()
+                        return JsonResponse({"message":"Removed"})
+
+@csrf_exempt
+def on_off_control_edit(request):
+    if request.method == 'POST':
+        edit_instance = JSONParser().parse(request)
+        type_name = edit_instance.get('type_name')
+        type_ver = edit_instance.get('type_ver')
+        control_key = edit_instance.get('control_key')
+        old_name = edit_instance.get('old_dis_name')
+        old_vpin = edit_instance.get('old_vpin')
+        new_name = edit_instance.get('new_dis_name')
+        new_vpin = edit_instance.get('new_vpin')
+        new_alwusr = edit_instance.get('new_alwusr')
+        instance = DeviceType.objects.get(Name=type_name,version=type_ver)
+        a = instance.controls
+        
+        for dictionary in a:
+            if control_key in dictionary and 'display_name' in dictionary[control_key]:
+                if control_key in dictionary and 'virtual_pin' in dictionary[control_key]:
+                    value1 = dictionary[control_key]['display_name']
+                    value2 = dictionary[control_key]['virtual_pin']
+                    print(value1,value2)
+                    if (value1==old_name and value2==old_vpin):
+                        update_dict = {"button":{"display_name":new_name,"virtual_pin":new_vpin,"allow_user":new_alwusr}}
+                        if update_dict not in a:
+                            dictionary.update(update_dict)
+                            instance.save()
+                            return JsonResponse({"message":"control updated"})
+                        else:
+                            return JsonResponse({"message":"pin already in use"})
+                    else:
+                        pass
+
+@csrf_exempt
+def slider_control_edit(request):
+    if request.method == 'POST':
+        edit_instance = JSONParser().parse(request)
+        type_name = edit_instance.get('type_name')
+        type_ver = edit_instance.get('type_ver')
+        control_key = edit_instance.get('control_key')
+        old_name = edit_instance.get('old_dis_name')
+        old_vpin = edit_instance.get('old_vpin')
+        new_name = edit_instance.get('new_dis_name')
+        new_vpin = edit_instance.get('new_vpin')
+        new_min = edit_instance.get('new_min')
+        new_max = edit_instance.get('new_max')
+        new_step_value = edit_instance.get('new_step_value')
+        new_alwusr = edit_instance.get('new_alwusr')
+        instance = DeviceType.objects.get(Name=type_name,version=type_ver)
+        a = instance.controls
+
+        for dictionary in a:
+            if control_key in dictionary and 'display_name' in dictionary[control_key]:
+                if control_key in dictionary and 'virtual_pin' in dictionary[control_key]:
+                    value1 = dictionary[control_key]['display_name']
+                    value2 = dictionary[control_key]['virtual_pin']
+                    print(value1,value2)
+                    if (value1==old_name and value2==old_vpin):
+                        update_dict = {"slider":{"display_name":new_name,"virtual_pin":new_vpin,"min":new_min,"max":new_max,"step_value":new_step_value,"allow_user":new_alwusr}}
+                        if update_dict not in a:
+                            dictionary.update(update_dict)
+                            instance.save()
+                            return JsonResponse({"message":"control updated"})
+                        else:
+                            return JsonResponse({"message":"pin already in use"})
+                    else:
+                        pass
+
+@csrf_exempt
+def graph_control_edit(request):
+    if request.method == 'POST':
+        edit_instance = JSONParser().parse(request)
+        type_name = edit_instance.get('type_name')
+        type_ver = edit_instance.get('type_ver')
+        control_key = edit_instance.get('control_key')
+        old_name = edit_instance.get('old_dis_name')
+        old_label = edit_instance.get('old_label_name')
+        new_name = edit_instance.get('new_dis_name')
+        new_label = edit_instance.get('new_label_name')
+        new_color = edit_instance.get('new_color')
+        new_alwusr = edit_instance.get('new_alwusr')
+        instance = DeviceType.objects.get(Name=type_name,version=type_ver)
+        a = instance.controls
+        
+        for dictionary in a:
+            if control_key in dictionary and 'display_name' in dictionary[control_key]:
+                if control_key in dictionary and 'label' in dictionary[control_key]:
+                    value1 = dictionary[control_key]['display_name']
+                    value2 = dictionary[control_key]['label']
+                    if (value1==old_name and value2==old_label):
+                        update_dict = {"graph":{"display_name":new_name,"label":new_label,"color":new_color,"allow_user":new_alwusr}}
+                        if update_dict not in a:
+                            dictionary.update(update_dict)
+                            instance.save()
+                            return JsonResponse({"message":"Graph updated"})
+                        else:
+                            return JsonResponse({"message":"Label already in use"})
+                    else:
+                        pass
+
+            
+                    
+
+@csrf_exempt
+def mqtt(request):
+    if request.method == "POST":
+        obj = JSONParser().parse(request)
+        device_id = obj.get('deviceid')
+        account_id = obj.get('accountid')
+        v_pin = obj.get('virtualpin')
+        value = obj.get('value')
+        data = {
+            "device_id":device_id,
+            "account_id":account_id,
+            "v_pin":v_pin,
+            "value":value
+        }
+        mqtt = Client()
+        mqtt.username_pw_set('BarifloLabs','Bfl@123')
+        mqtt.connect('16.171.160.72',1883)
+        mqtt.publish('',data)
 
 
 

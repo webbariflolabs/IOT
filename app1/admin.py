@@ -19,7 +19,7 @@ class Data(admin.ModelAdmin):
 
 @admin.register(DeviceType)
 class DeviceType(admin.ModelAdmin):
-    list_display = ['Name','version']
+    list_display = ['Name','version','controls']
 
 @admin.register(CustomPermission)
 class AdminCustomPermission(admin.ModelAdmin):

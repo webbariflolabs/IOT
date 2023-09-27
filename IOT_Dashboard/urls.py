@@ -47,5 +47,14 @@ urlpatterns = [
     path('devicetype_edit/',views.devicetype_edit),
     path('devicetype_view/',views.devicetype_view),
     path('devicetype_delete/',views.devicetype_delete),
+    path('mqtt/',views.mqtt),
+    path('on_off_control/',views.on_off_controls),
+    path('slider_control/',views.slider_controls),
+    path('graph_control/',views.graph_controls),
+    path('controls_view/<str:type_name>/<int:type_ver>/',views.controls_view),
+    path('control_delete/',views.control_delete),
+    path('on_off_control_edit/',views.on_off_control_edit),
+    path('slider_control_edit/',views.slider_control_edit),
+    path('graph_control_edit/',views.graph_control_edit),
     
 ]

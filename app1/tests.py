@@ -1,8 +1,23 @@
-def fib(n):
-    k = [0.0,1.0]
-    a,b = 0.0,1.0
-    for i in range(n):
-        a,b = b,a+b
-        k.append(b)
-    return k
-print(fib(4))
+
+
+a = [{'A': {'one': 1}}, {'B': {'two': 2}},{'B': {'two': 4}}]
+# values = []  # Create an empty list to store the values
+
+# for dictionary in a:
+#     for value_dict in dictionary.values():
+#         values.append(value_dict)
+
+# for value in values:
+#     print(value)
+# a = ['a','b']
+del a[2]
+print(a)
+
+
+
+
+
+
+
+
+

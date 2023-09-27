@@ -33,13 +33,13 @@ ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
     'daphne',
-    'channels',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'channels',
     'rest_framework',
     'corsheaders',
     'app1',
@@ -74,30 +74,30 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'IOT_Dashboard.wsgi.application'
+# WSGI_APPLICATION = 'IOT_Dashboard.wsgi.application'
 ASGI_APPLICATION = 'IOT_Dashboard.asgi.application'
 
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
 # DATABASES = {
 #     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'iotdb',                      
-#         'USER': 'bariflolabs',
-#         'PASSWORD': 'bariflo@2023',
-#         'HOST': 'localhost',
-#         'PORT': '5432',
-        
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
 #     }
 # }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'iotdb',                      
+        'USER': 'bariflolabs',
+        'PASSWORD': 'bariflo@2023',
+        'HOST': 'localhost',
+        'PORT': '5432',
+        
+    }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
@@ -117,6 +117,11 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+# CHANNEL_LAYERS = {
+#     'default': {
+#         'BACKEND': 'channels.layers.InMemoryChannelLayer',
+#     },
+# }
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/

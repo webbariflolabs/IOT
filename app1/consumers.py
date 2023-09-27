@@ -1,7 +1,6 @@
 import asyncio
 from asgiref.sync import sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
-from .models import *
 from datetime import datetime
 from django.utils import timezone
 from django.http import JsonResponse
@@ -20,6 +19,7 @@ class MySyncConsumer(AsyncWebsocketConsumer):
 
     @sync_to_async
     def get_data(self):
+        from .models import Parameter
         data = {
         "ORP": None,
         "DO": None,
@@ -38,21 +38,21 @@ class MySyncConsumer(AsyncWebsocketConsumer):
         for user in obj:
         
             user_time_str = user.time.strftime("%H:%M")
-            seven_minutes_ago = timezone.localtime(timezone.now()) - timezone.timedelta(minutes=60)
+            sixty_minutes_ago = timezone.localtime(timezone.now()) - timezone.timedelta(minutes=60)
 
             
-            print("Current Time:", current_time)
+            print("Current Time:", current_time) 
             print("User Time:", user_time_str)
-            print("minute : ",seven_minutes_ago)
+            print("minute : ",sixty_minutes_ago)
 
             while current_time:
-                orp_obj = Parameter.objects.filter(device_id=self.user_id, param_type="ORP",time__gte=seven_minutes_ago)
-                do_obj = Parameter.objects.filter(device_id=self.user_id, param_type="DO",time__gte=seven_minutes_ago)
-                ph_obj = Parameter.objects.filter(device_id=self.user_id, param_type="Ph",time__gte=seven_minutes_ago)
-                cpu_obj = Parameter.objects.filter(device_id=self.user_id, param_type="CPU_TEMPERATURE",time__gte=seven_minutes_ago)
-                curr_obj = Parameter.objects.filter(device_id=self.user_id, param_type="Current",time__gte=seven_minutes_ago)
-                volt_obj = Parameter.objects.filter(device_id=self.user_id, param_type="voltage",time__gte=seven_minutes_ago)
-                time_obj = Parameter.objects.filter(device_id=self.user_id,time__gte=seven_minutes_ago)
+                orp_obj = Parameter.objects.filter(device_id=self.user_id, param_type="ORP",time__gte=sixty_minutes_ago)
+                do_obj = Parameter.objects.filter(device_id=self.user_id, param_type="DO",time__gte=sixty_minutes_ago)
+                ph_obj = Parameter.objects.filter(device_id=self.user_id, param_type="Ph",time__gte=sixty_minutes_ago)
+                cpu_obj = Parameter.objects.filter(device_id=self.user_id, param_type="CPU_TEMPERATURE",time__gte=sixty_minutes_ago)
+                curr_obj = Parameter.objects.filter(device_id=self.user_id, param_type="Current",time__gte=sixty_minutes_ago)
+                volt_obj = Parameter.objects.filter(device_id=self.user_id, param_type="voltage",time__gte=sixty_minutes_ago)
+                time_obj = Parameter.objects.filter(device_id=self.user_id,time__gte=sixty_minutes_ago)
                 
 
                 if orp_obj:

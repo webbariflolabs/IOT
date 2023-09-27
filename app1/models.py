@@ -28,9 +28,12 @@ class Account(models.Model):
 class DeviceType(models.Model):
       Name=models.CharField(max_length=24)
       version=models.IntegerField()
+      controls = models.JSONField(null=True,blank=True)
       def __str__(self):
           name=f"{self.Name} {self.version}"
           return name
+
+
 
 class Device(models.Model):
     device_id = models.IntegerField(primary_key=True)
