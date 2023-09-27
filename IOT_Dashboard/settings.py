@@ -146,5 +146,6 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOWED_ORIGINS = [
-    'http://localhost:4200',
+    'http://4.240.1.15',
+    'http://aqua.bariflorobotics.com',
 ]
