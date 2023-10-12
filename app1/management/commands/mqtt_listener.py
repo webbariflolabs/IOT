@@ -1,6 +1,5 @@
 
 from django.core.management.base import BaseCommand
-from paho.mqtt.client import Client
 from app1.models import Mqtt_device,Parameter  # Replace with your actual model
 import json
 from django.utils import timezone
@@ -59,6 +58,7 @@ class Command(BaseCommand):
             Parameter.objects.create(device=device,param_type=param_type,param_value=param_value,date=date_component,time=time_component)
             
 
+        from paho.mqtt.client import Client
         mqtt_client = Client()
         mqtt_client.on_connect = on_connect
         mqtt_client.on_message = on_message

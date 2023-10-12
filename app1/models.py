@@ -1,17 +1,48 @@
 from django.db import models
 from django.utils import timezone
 
+class Registration(models.Model):
+    Name=models.CharField(max_length=20)
+    Email=models.EmailField()
+    Mobno=models.BigIntegerField(primary_key=True)
+    Adhaar=models.IntegerField()
+    account_name=models.CharField(max_length=50)
+    device_details=models.CharField(max_length=200)
+    USER_TYPES = (
+        ('3d', '3D PRINTING'),
+        ('aqua', 'AQUA CULTURE'),
+        ('water', 'WATER BODY MANAGEMENT'),
+    )
+    user_category = models.CharField(max_length=20, choices=USER_TYPES,default=None)
+    # user_category=models.ForeignKey(AdminUser, on_delete=models.CASCADE)
+    # def __str__(self):
+    #     name=f"{self.Name}"
+    #     return name
+
+class AdminUser(models.Model):
+    Name=models.CharField(max_length=30)
+    Email=models.EmailField()
+    Mobno=models.BigIntegerField(primary_key=True)
+    password=models.CharField(max_length=20)
+    USER_TYPES = (
+        ('3d', '3D PRINTING'),
+        ('aqua', 'AQUA CULTURE'),
+        ('waterbody', 'WATER BODY MANAGEMENT'),
+    )
+    user_category = models.CharField(max_length=20, choices=USER_TYPES,default=USER_TYPES)
+    def __str__(self):
+        name = f"{self.user_category}"
+        return name
 
 class User(models.Model):
     Name=models.CharField(max_length=20)
     Email=models.EmailField()
     Mobno=models.BigIntegerField(primary_key=True)
     password=models.CharField(max_length=20)
-    USER_TYPES = (
-        ('general', 'ACCOUNT USER'),
-        ('admin', 'ACCOUNT ADMIN'),
-    )
-    user_type = models.CharField(max_length=20, choices=USER_TYPES,default=USER_TYPES)
+    Adhaar=models.IntegerField()
+    user_pic=models.ImageField(upload_to='user_img/',blank=True)
+    user_docs=models.FileField(upload_to='user_docs/',blank=True)
+    user_category=models.ForeignKey(AdminUser, on_delete=models.CASCADE)
     def __str__(self):
         name=f"{self.Name}"
         return name

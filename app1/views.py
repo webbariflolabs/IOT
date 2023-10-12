@@ -3,7 +3,7 @@ from .serializers import PermissionSerializer,DeviceSerializer,DeviceTypeseriali
 from django.shortcuts import render
 from rest_framework.parsers import JSONParser
 from django.http import HttpResponse,HttpRequest,JsonResponse
-from app1.models import User,Account,Device,DeviceType,CustomPermission,Parameter
+from app1.models import *
 from django.views.decorators.csrf import csrf_exempt
 from django.middleware.csrf import get_token
 import random
@@ -14,7 +14,7 @@ from django.shortcuts import get_object_or_404
 from datetime import datetime
 from paho.mqtt.client import Client
 import json
-import jwt  
+# import jwt
 from django.conf import settings  
 
 # Create your views here.
@@ -24,6 +24,31 @@ from django.conf import settings
 #    global csrf_token1
 #    csrf_token1=get_token(request)
 #    return JsonResponse({"csrf_token":csrf_token1})
+@csrf_exempt
+def registration(request):
+    if request.method == 'POST':
+        regd_instance=JSONParser().parse(request)
+        firstname=regd_instance.get('firstname')
+        lastname=regd_instance.get('lastname')
+        email=regd_instance.get('email')
+        mobno=regd_instance.get('mobno')
+        adhaar=regd_instance.get('adhaar')
+        accountname=regd_instance.get('accountname')
+        devicedetails=regd_instance.get('devicedetails')
+        user_cat=regd_instance.get('user_cat')
+        fullname=firstname+" "+lastname
+        instance=Registration.objects.filter(Mobno=mobno)
+        
+        try:
+            if not instance.exists():
+                datas = Registration(Name=fullname,Email=email,Mobno=mobno,Adhaar=adhaar,account_name=accountname,device_details=devicedetails,user_category=user_cat)
+                datas.save()
+                return JsonResponse({"massage":"Registration Successfull"})
+            else:
+                return JsonResponse({"massage":"User Mobile number already registered, Report to Admin"})
+        except Exception as e:
+             return JsonResponse({'error': str(e)}, status=500)
+
 
 @csrf_exempt        
 def login(request):
@@ -32,26 +57,53 @@ def login(request):
        phone=userdata.get('mobileno')
        password=userdata.get('password')
        try:
-            users=User.objects.get(Mobno=phone)
-            # print(users.Mobno)
-            # print(users.password)
-            # print(users.user_type)
-            # jwt_secret_key = "your-jwt-secret-key"
-            # payload = {
-            #         'mobileno': users.Mobno
-            #     }
-            # token = jwt.encode(payload, jwt_secret_key, algorithm='HS256')
-            if phone == users.Mobno and users.user_type == "general":
-                print("yessss")
-                if phone == users.Mobno and password != users.password:
-                    return JsonResponse("Invalid Password For General User",safe=False)
-                elif phone == users.Mobno and password == users.password:
-                    return JsonResponse({'message':"Login Successfull For General User",'username':users.Name},safe=False)
-            elif phone == users.Mobno and users.user_type == "admin":
-                 if phone == users.Mobno and password != users.password:
-                     return JsonResponse("Invalid Password For Admin",safe=False)
-                 elif phone == users.Mobno and password == users.password:
-                     return JsonResponse({'message':"Login Successfull For Admin User",'username':users.Name},safe=False)
+            if type(phone)==int:
+                if User.objects.filter(Mobno=phone).exists():
+                    print("true")
+                    users = User.objects.get(Mobno=phone)
+                    if phone == users.Mobno and str(users.user_category) == "3d" and password == users.password:
+                        return JsonResponse({'message':"Login Successfull For 3D User",'username':users.Name,'mobno':users.Mobno})
+                    elif phone == users.Mobno and str(users.user_category) == "waterbody" and password == users.password:
+                        return JsonResponse({'message':"Login Successfull For waterbody User",'username':users.Name,'mobno':users.Mobno})
+                    elif phone == users.Mobno and str(users.user_category) == "aqua" and password == users.password:
+                        return JsonResponse({'message':"Login Successfull For aqua User",'username':users.Name,'mobno':users.Mobno})
+                    else:  
+                        return JsonResponse({'error':"Invalid credential for General user"})
+                if AdminUser.objects.filter(Mobno=phone).exists():
+                    admin = AdminUser.objects.get(Mobno=phone)
+                    if phone == admin.Mobno and str(admin.user_category) == "3d" and password == admin.password:
+                        return JsonResponse({'message':"Login Successfull For 3D Admin",'username':admin.Name,'mobno':admin.Mobno})
+                    elif phone == admin.Mobno and str(admin.user_category) == "waterbody" and password == admin.password:
+                        return JsonResponse({'message':"Login Successfull For waterbody Admin",'username':admin.Name,'mobno':admin.Mobno})
+                    elif phone == admin.Mobno and str(admin.user_category) == "aqua" and password == admin.password:
+                        return JsonResponse({'message':"Login Successfull For aqua Admin",'username':admin.Name,'mobno':admin.Mobno})
+                    else:  
+                        return JsonResponse({'error':"Invalid credential for Admin user"})
+                else:  
+                        return JsonResponse({'error':"Invalid inputs "})
+            if type(phone)==str:
+                if User.objects.filter(Email=phone).exists():
+                    users=User.objects.get(Email=phone)
+                    if phone == users.Email and str(users.user_category) == "3d" and password == users.password:
+                        return JsonResponse({'message':"Login Successfull For 3D User",'username':users.Name,'mobno':users.Mobno})
+                    elif phone == users.Email and str(users.user_category) == "waterbody" and password == users.password:
+                        return JsonResponse({'message':"Login Successfull For waterbody User",'username':users.Name,'mobno':users.Mobno})
+                    elif phone == users.Email and str(users.user_category) == "aqua" and password == users.password:
+                        return JsonResponse({'message':"Login Successfull For aqua User",'username':users.Name,'mobno':users.Mobno})
+                    else:  
+                        return JsonResponse({'error':"Invalid credential for general user"})
+                if AdminUser.objects.filter(Email=phone).exists():
+                    admin = AdminUser.objects.get(Email=phone)
+                    if phone == admin.Email and str(admin.user_category) == "3d" and password == admin.password:
+                        return JsonResponse({'message':"Login Successfull For 3D Admin",'username':admin.Name,'mobno':admin.Mobno})
+                    elif phone == admin.Email and str(admin.user_category) == "waterbody" and password == admin.password:
+                        return JsonResponse({'message':"Login Successfull For waterbody Admin",'username':admin.Name,'mobno':admin.Mobno})
+                    elif phone == admin.Email and str(admin.user_category) == "aqua" and password == admin.password:
+                        return JsonResponse({'message':"Login Successfull For aqua Admin",'username':admin.Name,'mobno':admin.Mobno})
+                    else:  
+                        return JsonResponse({'error':"Invalid credential for Admin user"})
+                else:  
+                    return JsonResponse({'error':"Invalid credential for Admin user"})
        except:
             return JsonResponse("Invalid Credentials",safe=False)
 
@@ -64,7 +116,7 @@ def account_create(request):
        user_mobno=account_page.get('usermobno')
        print(account_nm)
        try:
-           if Account.objects.filter(account_name=account_nm).exists():
+           if Account.objects.filter(account_name=account_nm,user=user_mobno).exists():
                 return JsonResponse({"error":"Account already exists"})
            else:
             while True:
@@ -87,16 +139,16 @@ def account_create(request):
 def user_create(request):
     if request.method=="POST":
        user = JSONParser().parse(request)
-       fname=user.get('firstname')
-       lname=user.get('lastname')
-       email=user.get('email')
        mobno=user.get('mobileno')
        password=user.get('password')
-       usertype=user.get('usertype')
-       fullname = fname+" "+lname
+       user_pic=user.get('user_pic')
+       user_docs=user.get('user_docs')
+
        try:
+            user_instance = Registration.objects.get(Mobno=mobno)
+            user_category_instance = AdminUser.objects.get(user_category=user_instance.user_category)
             if not User.objects.filter(Mobno=mobno).exists():
-                user=User(Name=fullname,Email=email,Mobno=mobno,password=password,user_type=usertype)
+                user=User(Name=user_instance.Name,Email=user_instance.Email,Mobno=mobno,password=password,Adhaar=user_instance.Adhaar,user_pic=user_pic,user_docs=user_docs,user_category=user_category_instance)
                 user.save()
                 return JsonResponse({"message":"User Created"})
             else:
@@ -148,15 +200,16 @@ def account_view(request,mobno):
             return JsonResponse({'error': str(e)}, status=500)
     
 @csrf_exempt
-def user_view(request):
+def user_view(request,arg):
     try:
         if request.method == 'GET':
-            list=User.objects.all()
-            final_list1 = [(list.Name,list.Mobno,list.user_type,list.Email) for list in list]
+            ins = AdminUser.objects.get(Mobno=arg)
+            list=User.objects.filter(user_category=ins)
+            final_list1 = [(list.Name,list.Mobno,list.Email) for list in list]
             return JsonResponse({"items":final_list1})
         else:
             pass
-    except Exception as e:
+    except Exception as e:  
             return JsonResponse({'error': str(e)}, status=500)
     
 
@@ -266,7 +319,7 @@ def device_view(request,account_id):
     try:
         if request.method=="GET":
             device_list=Device.objects.filter(account=account_id)
-            device_type_list = [(device.device_id,device.device_name,(device.device_type.Name)) for device in device_list]
+            device_type_list = [(device.device_id,device.device_name,(device.device_type.Name),(device.device_type.version)) for device in device_list]
             return JsonResponse({"result": device_type_list})    
     except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
@@ -328,52 +381,45 @@ def permission_save(request,user_id):
         return JsonResponse({"message":response_data})
     
 @csrf_exempt
-def datefilter(request,device_id):
-    data={
-        'data':None,
-        }
+def datefilter(request,device_id,user_given_day):
+    data={}
+    # tm = []
     if request.method=="GET":
-        user_instance=JSONParser().parse(request)
-        user_given_day=user_instance.get('day')
-        data_type=user_instance.get('data_type')
         diff_time = timezone.now()-timedelta(days=user_given_day)    
-
-        result = Parameter.objects.filter(date__gte=diff_time,device=device_id,param_type=data_type)
-        obj = [dt.param_value for dt in result]
-        data['data']=obj
-        
-        return JsonResponse({"message":data})
+        types=['Ph','voltage','ORP','DO','Current','CPU_TEMPERATURE']
+        for typ in types:
+            result = Parameter.objects.filter(date__gte=diff_time,device=device_id,param_type=typ)
+            obj = [(dt.param_value) for dt in result]
+            time = [(dt.time) for dt in result]
+            data[typ]=obj
+            # if time not in tm:
+            #     tm.append(time)
+    return JsonResponse({"data":data,"time":time})
             
 
 @csrf_exempt
-def custom_datefilter(request,device_id):
-    data={
-        'data':None,
-        }
-    if request.method == "GET":
-        user_instance = JSONParser().parse(request)
-        start_date = user_instance.get('from')
-        end_date = user_instance.get('to')
-        data_type = user_instance.get('data_type')
+def custom_datefilter(request,device_id,from_date,to_date):    #  Date format must be (YYYY-MM-DD)
+    data={}
+    tm = []
 
-        records = Parameter.objects.filter(date__range=(start_date, end_date),device=device_id,param_type=data_type)
-        obj = [record.param_value for record in records]
-        
-        data['data'] = obj
-           
-        return JsonResponse({"message":data})
+    if request.method == "GET":
+        types=['Ph','voltage','ORP','DO','Current','CPU_TEMPERATURE']
+        for typ in types:
+            records = Parameter.objects.filter(date__range=(from_date, to_date),device=device_id,param_type=typ)
+            all_record = [(record.param_value) for record in records]
+            time_record = [(record.time) for record in records]
+            # if time_record not in tm:
+            #     tm.append(time_record)
+            data[typ] = all_record
+
+    return JsonResponse({"data":data,"time":time_record})
             
 
 
 @csrf_exempt
-def download_excel(request,device_id):
+def download_excel(request,device_id,data_type,from_date,to_date):
     if request.method == "GET":
-        data = JSONParser().parse(request)
-        start_date = data.get('from')
-        end_date = data.get('to')
-        data_type = data.get('data_type')
-
-        records = Parameter.objects.filter(date__range=(start_date, end_date),device=device_id,param_type=data_type)
+        records = Parameter.objects.filter(date__range=(from_date, to_date),device=device_id,param_type=data_type)
 
         id = [record.device.device_id for record in records]
         data = [record.param_value for record in records]
@@ -393,12 +439,9 @@ def download_excel(request,device_id):
     
 
 @csrf_exempt
-def fixed_date_data_download(request,device_id):
+def fixed_date_data_download(request,device_id,user_given_day,data_type):
     if request.method == "GET":
-        data = JSONParser().parse(request)
-        day = data.get('day')
-        data_type = data.get('data_type')
-        diff_time=timezone.now()-timedelta(days=day)
+        diff_time=timezone.now()-timedelta(days=user_given_day)
 
         result = Parameter.objects.filter(date__gte=diff_time,device=device_id,param_type=data_type)
         data = [dt.param_value for dt in result]

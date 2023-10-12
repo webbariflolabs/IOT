@@ -1,19 +1,36 @@
+# import docx
 
+# # Create a new Word document
+# doc = docx.Document()
 
-a = [{'A': {'one': 1}}, {'B': {'two': 2}},{'B': {'two': 4}}]
-# values = []  # Create an empty list to store the values
+# # Add a title
+# doc.add_heading('My Data Report', level=1)
 
-# for dictionary in a:
-#     for value_dict in dictionary.values():
-#         values.append(value_dict)
+# # Add some text
+# doc.add_paragraph("This is an example report generated using python-docx.")
+# doc.add_paragraph("Here's some data:")
 
-# for value in values:
-#     print(value)
-# a = ['a','b']
-del a[2]
-print(a)
+# # Add a table
+# data = [
+#     ["Name", "Age", "Country"],
+#     ["Alice", "25", "USA"],
+#     ["Bob", "30", "Canada"],
+#     ["Charlie", "28", "UK"],
+# ]
 
+# table = doc.add_table(rows=1, cols=len(data[0]))
+# table.style = 'Table Grid'  # Apply a table style
 
+# # Add data to the table
+# for row_data in data:
+#     cells = table.add_row().cells
+#     for i, cell_text in enumerate(row_data):
+#         cells[i].text = cell_text
+
+# # Save the document
+# doc.save("data_report.docx")
+
+# print("Document saved as data_report.docx")
 
 
 

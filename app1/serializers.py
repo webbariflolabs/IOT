@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Account,DeviceType,CustomPermission,Device,Parameter,Mqtt_device
+from .models import Account,DeviceType,CustomPermission,Device,Parameter,Mqtt_device,AdminUser,Registration
 from django.contrib.auth.models import Permission
 
 
@@ -38,4 +38,14 @@ class ParameterSerializer(serializers.ModelSerializer):
 class MqttSerializer(serializers.ModelSerializer):
     class Meta:
         model =Mqtt_device
+        fields = '__all__'
+
+class AdminUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model =AdminUser
+        fields = '__all__'
+
+class RegistrationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model =Registration
         fields = '__all__'
