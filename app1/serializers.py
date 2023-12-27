@@ -24,22 +24,6 @@ class PermissionSerializer(serializers.ModelSerializer):
         model = Permission
         fields = '__all__'
 
-
-class CustomPermissionSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CustomPermission
-        fields = '__all__'
-
-class ParameterSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Parameter
-        fields = '__all__'
-
-class MqttSerializer(serializers.ModelSerializer):
-    class Meta:
-        model =Mqtt_device
-        fields = '__all__'
-
 class AdminUserSerializer(serializers.ModelSerializer):
     # user_img = serializers.ImageField(write_only=True)
     class Meta:

@@ -15,10 +15,7 @@ class Registration(models.Model):
         ('water', 'WATER BODY MANAGEMENT'),
     )
     user_category = models.CharField(max_length=20, choices=USER_TYPES,default=None)
-    # user_category=models.ForeignKey(AdminUser, on_delete=models.CASCADE)
-    # def __str__(self):
-    #     name=f"{self.Name}"
-    #     return name
+
 class SuperAdmin(models.Model):
     Username=models.CharField(max_length=30)
     Password=models.CharField(max_length=50)
@@ -84,45 +81,11 @@ class Device(models.Model):
         data=f"{self.device_id}"
         return data
 
+
 class Data(models.Model):
-    img = models.ImageField(upload_to='img/',max_length=100)
-    name = models.CharField(max_length=100)
-    def __str__(self):
-        return f"{self.name}"
-
-class CustomPermission(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='permission')
-    User_create = models.BooleanField(default=False)
-    User_edit = models.BooleanField(default=False)
-    User_views = models.BooleanField(default=False)
-    User_delete = models.BooleanField(default=False)
-    Account_create = models.BooleanField(default=False)
-    Account_edit = models.BooleanField(default=False)
-    Account_views = models.BooleanField(default=False)
-    Account_delete = models.BooleanField(default=False)
-    Device_create = models.BooleanField(default=False)
-    Device_edit = models.BooleanField(default=False)
-    Device_delete = models.BooleanField(default=False)
-    Device_views = models.BooleanField(default=False)
-    Device_instruction = models.BooleanField(default=False)
-    Setting = models.BooleanField(default=False)
-
-class Mqtt_device(models.Model):
-    device_id = models.BigIntegerField(primary_key=True)
-    def __str__(self):
-        return f"{self.device_id}"
-
-
-class Parameter(models.Model):
-    device = models.ForeignKey(Mqtt_device,on_delete=models.CASCADE,to_field='device_id')  # Renamed to avoid conflict
+    device = models.ForeignKey(Device,on_delete=models.CASCADE,to_field='device_id')  # Renamed to avoid conflict
     param_type = models.CharField(max_length=100)
     param_value = models.JSONField()
     date = models.DateField(default=timezone.now)
     time = models.TimeField(default=timezone.now)
-    @property
-    def mqtt_device_id(self):
-        return self.device.device_id
 
-    
-
-    

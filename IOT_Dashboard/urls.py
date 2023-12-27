@@ -23,7 +23,6 @@ urlpatterns = [
     path('admin_delete/',views.admin_delete),
     path('admin_view/',views.admin_view),
     path('account/',views.account_create),
-    path('permission/<int:user_id>/',views.permission_save),
     path('user_view/<mobno>/',views.user_view),
     path('user_edit/',views.user_edit),
     path('user_delete/',views.user_delete),

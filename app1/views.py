@@ -393,62 +393,7 @@ def device_view(request,account_id):
     except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
 
-@csrf_exempt
-def permission_save(request,user_id):
-    if request.method=="POST":
-        device=JSONParser().parse(request)
-        usercreate = device.get('usercreate')
-        useredit = device.get('useredit')
-        userdelete = device.get('userdelete')
-        userview = device.get('userview')
-        accountcreate = device.get('accountcreate')
-        accountedit = device.get('accountedit')
-        accountdelete = device.get('accountdelete')
-        accountview = device.get('accountview')
-        devicecreate = device.get('devicecreate')
-        deviceedit = device.get('deviceedit')
-        devicedelete = device.get('devicedelete')
-        deviceview = device.get('deviceview')
-        deviceinstruction = device.get('deviceinstruction')
-        setting = device.get('setting')
-        print(setting)
-        if CustomPermission.objects.filter(user=user_id).exists():
-            user_dlt = CustomPermission.objects.filter(user=user_id)
-            user_dlt.delete()
-            print("yes available")
-            CustomPermission.objects.filter(user=user_id)
-            userid = User.objects.get(Mobno=user_id)
-            datasave=CustomPermission(user=userid,User_create=usercreate,User_edit=useredit,User_delete=userdelete,User_views=userview,Account_create=accountcreate,Account_edit=accountedit,Account_delete=accountdelete,Account_views=accountview,Device_create=devicecreate,Device_edit=deviceedit,Device_delete=devicedelete,Device_views=deviceview,Device_instruction=deviceinstruction,Setting=setting)
-            datasave.save()
-            return JsonResponse({"message":"saved"})
-        else:
-            userid = User.objects.get(Mobno=user_id)
-            datasave=CustomPermission(user=userid,User_create=usercreate,User_edit=useredit,User_delete=userdelete,User_views=userview,Account_create=accountcreate,Account_edit=accountedit,Account_delete=accountdelete,Account_views=accountview,Device_create=devicecreate,Device_edit=deviceedit,Device_delete=devicedelete,Device_views=deviceview,Device_instruction=deviceinstruction,Setting=setting)
-            datasave.save()
-            return JsonResponse({"message":"saved"})
 
-    elif request.method=="GET":
-        user = get_object_or_404(User, Mobno=user_id)
-        permission = CustomPermission.objects.get(user=user)
-
-        response_data = {
-            'user_create' : permission.User_create,
-            'user_edit' : permission.User_edit,
-            'user_delete' : permission.User_delete,
-            'user_view' : permission.User_views,
-            'account_create' : permission.Account_create,
-            'account_edit' : permission.Account_edit,
-            'account_delete' : permission.Account_delete,
-            'account_view' : permission.Account_views,
-            'device_create' : permission.Device_create,
-            'device_edit' : permission.Device_edit,
-            'device_delete' : permission.Device_delete,
-            'device_view' : permission.Device_views,
-            'deviceinstruction' : permission.Device_instruction,
-            'settings' : permission.Setting,
-        }
-        return JsonResponse({"message":response_data})
-    
 @csrf_exempt
 def datefilter(request,device_id,user_given_day):
     if request.method=="GET":
@@ -498,7 +443,7 @@ def custom_datefilter(request,device_id,from_date,to_date):    #  Date format mu
 @csrf_exempt
 def download_excel(request,device_id,data_type,from_date,to_date):
     if request.method == "GET":
-        records = Parameter.objects.filter(date__range=(from_date, to_date),device=device_id,param_type=data_type)
+        records = Data.objects.filter(date__range=(from_date, to_date),device=device_id,param_type=data_type)
 
         id = [record.device.device_id for record in records]
         data = [record.param_value for record in records]
@@ -522,7 +467,7 @@ def fixed_date_data_download(request,device_id,user_given_day,data_type):
     if request.method == "GET":
         diff_time=timezone.now()-timedelta(days=user_given_day)
 
-        result = Parameter.objects.filter(date__gte=diff_time,device=device_id,param_type=data_type)
+        result = Data.objects.filter(date__gte=diff_time,device=device_id,param_type=data_type)
         data = [dt.param_value for dt in result]
         id = [dt.device.device_id for dt in result]
 
