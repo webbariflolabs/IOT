@@ -1,14 +1,18 @@
 from django.contrib import admin
-from .models import User,Account,Device,Data,DeviceType,CustomPermission,Parameter,Mqtt_device,AdminUser,Registration
+from .models import *
 # Register your models here.
 
 @admin.register(Registration)
 class Registration(admin.ModelAdmin):
     list_display = ['Name','Email','Mobno','Adhaar','account_name','device_details','user_category']
 
+@admin.register(SuperAdmin)
+class SuperAdminUser(admin.ModelAdmin):
+    list_display = ['Username','Password']
+
 @admin.register(AdminUser)
 class AdminUser(admin.ModelAdmin):
-    list_display = ['Name','Email','Mobno','password','user_category']
+    list_display = ['Name','Email','Mobno','password','user_category','user_img']
 
 @admin.register(User)
 class User(admin.ModelAdmin):
@@ -24,7 +28,7 @@ class Device(admin.ModelAdmin):
 
 @admin.register(Data)
 class Data(admin.ModelAdmin):
-    list_display = ['timestamp','value','device']
+    list_display = ['img','name']
 
 @admin.register(DeviceType)
 class DeviceType(admin.ModelAdmin):
@@ -40,7 +44,7 @@ class AdminMqtt_device(admin.ModelAdmin):
 
 @admin.register(Parameter)
 class AdminDeviceParameter(admin.ModelAdmin):
-    list_display = ['device','param_type','param_value','date','time',]
+    list_display = ['id','device','param_type','param_value','date','time',]
     def mqtt_device_id(self,obj):
         return obj.device.device_id
     

@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+import datetime
 
 class Registration(models.Model):
     Name=models.CharField(max_length=20)
@@ -18,7 +19,14 @@ class Registration(models.Model):
     # def __str__(self):
     #     name=f"{self.Name}"
     #     return name
+class SuperAdmin(models.Model):
+    Username=models.CharField(max_length=30)
+    Password=models.CharField(max_length=50)
 
+def admin_img(instance,filename):
+    current_dt = datetime.datetime.now()
+    date_str = current_dt.strftime("%d-%m-%Y")
+    return '/'.join(['Admin_user_profile',str((instance.Name)+" "+date_str),filename])
 class AdminUser(models.Model):
     Name=models.CharField(max_length=30)
     Email=models.EmailField()
@@ -27,14 +35,17 @@ class AdminUser(models.Model):
     USER_TYPES = (
         ('3d', '3D PRINTING'),
         ('aqua', 'AQUA CULTURE'),
-        ('waterbody', 'WATER BODY MANAGEMENT'),
+        ('water', 'WATER BODY MANAGEMENT'),
     )
     user_category = models.CharField(max_length=20, choices=USER_TYPES,default=USER_TYPES)
+    user_img = models.ImageField(upload_to=admin_img,blank=True)
     def __str__(self):
         name = f"{self.user_category}"
         return name
 
 class User(models.Model):
+    # def name(self):
+    #     return Na
     Name=models.CharField(max_length=20)
     Email=models.EmailField()
     Mobno=models.BigIntegerField(primary_key=True)
@@ -64,8 +75,6 @@ class DeviceType(models.Model):
           name=f"{self.Name} {self.version}"
           return name
 
-
-
 class Device(models.Model):
     device_id = models.IntegerField(primary_key=True)
     device_name = models.CharField(max_length=100)
@@ -76,12 +85,10 @@ class Device(models.Model):
         return data
 
 class Data(models.Model):
-    timestamp = models.DateTimeField()
-    value = models.CharField(max_length=100)
-    device = models.ForeignKey(Device, on_delete=models.CASCADE, related_name='data')
+    img = models.ImageField(upload_to='img/',max_length=100)
+    name = models.CharField(max_length=100)
     def __str__(self):
-        data=f"{self.device.device_id}"
-        return data
+        return f"{self.name}"
 
 class CustomPermission(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='permission')
@@ -100,16 +107,6 @@ class CustomPermission(models.Model):
     Device_instruction = models.BooleanField(default=False)
     Setting = models.BooleanField(default=False)
 
-# class Mqtt(models.Model):
-#     Device_id = models.ForeignKey(Device, on_delete=models.CASCADE, related_name='deviceid')
-#     Temprature = models.FloatField(null=True,blank=True)
-#     DO = models.FloatField(null=True,blank=True)
-#     pH = models.FloatField(null=True,blank=True)
-#     ORP = models.FloatField(null=True,blank=True)
-#     TDS = models.FloatField(null=True,blank=True)
-#     Date = models.DateField(default=timezone.now) 
-#     Time = models.TimeField(default=timezone.now) 
-    
 class Mqtt_device(models.Model):
     device_id = models.BigIntegerField(primary_key=True)
     def __str__(self):

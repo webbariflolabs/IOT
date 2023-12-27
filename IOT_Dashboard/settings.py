@@ -11,7 +11,9 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 import os
 from pathlib import Path
-
+# os.environ.setdefault("DJANGO_SETTINGS_MODULE", __file__)
+# import django
+# django.setup()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -92,9 +94,10 @@ DATABASES = {
 #         'ENGINE': 'django.db.backends.postgresql',
 #         'NAME': 'iotdb',                      
 #         'USER': 'bariflolabs',
-#         'PASSWORD': 'bariflo@2023',
-#         'HOST': 'localhost',
+#         'PASSWORD': 'bariflo123',
+#         'HOST': '20.244.48.88',
 #         'PORT': '5432',
+       
         
 #     }
 # }
@@ -140,14 +143,15 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR,'static/')
-MEDIA_ROOT = 'static/app1/'
+MEDIA_URL = 'media/'
+MEDIA_ROOT = os.path.join(BASE_DIR,'media/')
 
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# EMAIL_HOST = 'smtp.gmail.com'
-# EMAIL_USE_TLS = True
-# EMAIL_PORT = 587
-# EMAIL_HOST_USER = 'pradip.sutar2018@gmail.com'
-# EMAIL_HOST_PASSWORD = 'pradip123@@@'
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_USE_TLS = True
+EMAIL_PORT = 587
+EMAIL_HOST_USER = 'care.bariflolabs@gmail.com'
+EMAIL_HOST_PASSWORD = 'lhbvxthqobhnztrn' 
 
 
 # Default primary key field type
@@ -158,6 +162,6 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOWED_ORIGINS = [
     'http://4.240.1.15',
     'http://aqua.bariflorobotics.com',
-    'http://20.235.248.237',
+    'http://20.235.248.237:4200',
     'http://localhost:4200'
 ]

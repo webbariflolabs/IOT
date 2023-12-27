@@ -1,5 +1,5 @@
 from rest_framework import viewsets
-from .serializers import PermissionSerializer,DeviceSerializer,DeviceTypeserializers
+from .serializers import *
 from django.shortcuts import render
 from rest_framework.parsers import JSONParser
 from django.http import HttpResponse,HttpRequest,JsonResponse
@@ -14,9 +14,12 @@ from django.shortcuts import get_object_or_404
 from datetime import datetime
 from paho.mqtt.client import Client
 import json
-# import jwt
+from django.core.mail import send_mail
+from rest_framework.decorators import api_view
+import psycopg2 
 from django.conf import settings  
-
+from rest_framework.decorators import parser_classes
+from django.db import connection
 # Create your views here.
 
 
@@ -48,7 +51,47 @@ def registration(request):
                 return JsonResponse({"massage":"User Mobile number already registered, Report to Admin"})
         except Exception as e:
              return JsonResponse({'error': str(e)}, status=500)
+        
+@api_view(['POST'])
+@csrf_exempt        
+def admincreate(request):
+    if request.method == 'POST':
+        userimg=request.data['userimg']
+        firstname=request.data['firstname']
+        lastname=request.data['lastname']
+        email=request.data['email']
+        mobno=request.data['mobno']
+        password=request.data['password']
+        usertype=request.data['usertype']
+        fullname=firstname+" "+lastname
+        a = AdminUser.objects.filter(Mobno=mobno)
+        b = User.objects.filter(Mobno=mobno)
+        if b.exists():
+            return JsonResponse({"message":"Mobile no already used as General User"})
+        if not a.exists():
+            datas = AdminUser(Name=fullname,Email=email,Mobno=mobno,password=password,user_category=usertype,user_img=userimg)
+            datas.save()
+            return JsonResponse({"message":"Admin User created"})
+        else:
+            return JsonResponse({"message":"Mobile no. already exists"})
+    else:
+        return JsonResponse({"message":"Mobile no. already exists"})
 
+@csrf_exempt        
+def admin_delete(request):
+    if request.method == 'POST':
+        admininstance = JSONParser().parse(request)
+        mobno=admininstance.get('mobno')
+        a = AdminUser.objects.get(Mobno=mobno)
+        a.delete()
+        return JsonResponse({"message":"Admin deleted"})
+    
+@csrf_exempt        
+def admin_view(request):
+    if request.method == 'GET':
+        a = AdminUser.objects.all()
+        data = [(i.Name,i.Email,i.Mobno,i.user_category,i.password) for i in a]
+        return JsonResponse({"datas":data})
 
 @csrf_exempt        
 def login(request):
@@ -59,11 +102,10 @@ def login(request):
        try:
             if type(phone)==int:
                 if User.objects.filter(Mobno=phone).exists():
-                    print("true")
                     users = User.objects.get(Mobno=phone)
                     if phone == users.Mobno and str(users.user_category) == "3d" and password == users.password:
                         return JsonResponse({'message':"Login Successfull For 3D User",'username':users.Name,'mobno':users.Mobno})
-                    elif phone == users.Mobno and str(users.user_category) == "waterbody" and password == users.password:
+                    elif phone == users.Mobno and str(users.user_category) == "water" and password == users.password:
                         return JsonResponse({'message':"Login Successfull For waterbody User",'username':users.Name,'mobno':users.Mobno})
                     elif phone == users.Mobno and str(users.user_category) == "aqua" and password == users.password:
                         return JsonResponse({'message':"Login Successfull For aqua User",'username':users.Name,'mobno':users.Mobno})
@@ -73,30 +115,34 @@ def login(request):
                     admin = AdminUser.objects.get(Mobno=phone)
                     if phone == admin.Mobno and str(admin.user_category) == "3d" and password == admin.password:
                         return JsonResponse({'message':"Login Successfull For 3D Admin",'username':admin.Name,'mobno':admin.Mobno})
-                    elif phone == admin.Mobno and str(admin.user_category) == "waterbody" and password == admin.password:
+                    elif phone == admin.Mobno and str(admin.user_category) == "water" and password == admin.password:
                         return JsonResponse({'message':"Login Successfull For waterbody Admin",'username':admin.Name,'mobno':admin.Mobno})
                     elif phone == admin.Mobno and str(admin.user_category) == "aqua" and password == admin.password:
                         return JsonResponse({'message':"Login Successfull For aqua Admin",'username':admin.Name,'mobno':admin.Mobno})
                     else:  
                         return JsonResponse({'error':"Invalid credential for Admin user"})
-                else:  
-                        return JsonResponse({'error':"Invalid inputs "})
             if type(phone)==str:
                 if User.objects.filter(Email=phone).exists():
                     users=User.objects.get(Email=phone)
                     if phone == users.Email and str(users.user_category) == "3d" and password == users.password:
                         return JsonResponse({'message':"Login Successfull For 3D User",'username':users.Name,'mobno':users.Mobno})
-                    elif phone == users.Email and str(users.user_category) == "waterbody" and password == users.password:
+                    elif phone == users.Email and str(users.user_category) == "water" and password == users.password:
                         return JsonResponse({'message':"Login Successfull For waterbody User",'username':users.Name,'mobno':users.Mobno})
                     elif phone == users.Email and str(users.user_category) == "aqua" and password == users.password:
                         return JsonResponse({'message':"Login Successfull For aqua User",'username':users.Name,'mobno':users.Mobno})
                     else:  
                         return JsonResponse({'error':"Invalid credential for general user"})
+                if SuperAdmin.objects.filter(Username=phone).exists():
+                    admin = SuperAdmin.objects.get(Username=phone)
+                    if phone == admin.Username and password == admin.Password:
+                        return JsonResponse({'message':"Login Successfull For  SuperAdmin",'username':admin.Username,'password':admin.Password})
+                    else:  
+                        return JsonResponse({'error':"Invalid credential for SuperAdmin user"})
                 if AdminUser.objects.filter(Email=phone).exists():
                     admin = AdminUser.objects.get(Email=phone)
                     if phone == admin.Email and str(admin.user_category) == "3d" and password == admin.password:
                         return JsonResponse({'message':"Login Successfull For 3D Admin",'username':admin.Name,'mobno':admin.Mobno})
-                    elif phone == admin.Email and str(admin.user_category) == "waterbody" and password == admin.password:
+                    elif phone == admin.Email and str(admin.user_category) == "water" and password == admin.password:
                         return JsonResponse({'message':"Login Successfull For waterbody Admin",'username':admin.Name,'mobno':admin.Mobno})
                     elif phone == admin.Email and str(admin.user_category) == "aqua" and password == admin.password:
                         return JsonResponse({'message':"Login Successfull For aqua Admin",'username':admin.Name,'mobno':admin.Mobno})
@@ -126,23 +172,23 @@ def account_create(request):
                  if not Account.objects.filter(Account_id=accountid).exists():
                      accountsave=Account(account_name=account_nm, Account_id=accountid,user=user_instance)
                      accountsave.save()
-                     return JsonResponse({"message":"Account created"})
+                     return JsonResponse({"message":"Account created","accountid":accountid},safe=False)
                  else:
                      pass
-               
+                
        except Exception as e:
              return JsonResponse({'error': str(e)}, status=500)
        
 
-           
+@api_view(['POST'])          
 @csrf_exempt
 def user_create(request):
     if request.method=="POST":
-       user = JSONParser().parse(request)
-       mobno=user.get('mobileno')
-       password=user.get('password')
-       user_pic=user.get('user_pic')
-       user_docs=user.get('user_docs')
+    #    user = JSONParser().parse(request)
+       mobno=request.data['mobileno']
+       password=request.data['password']
+       user_pic=request.data['user_pic']
+       user_docs=request.data['user_docs']
 
        try:
             user_instance = Registration.objects.get(Mobno=mobno)
@@ -155,6 +201,35 @@ def user_create(request):
                 return JsonResponse({"message":"User already exists,Report to Admin"})
        except Exception as e:
              return JsonResponse({'error': str(e)}, status=500)
+    
+@csrf_exempt
+def register_view(request,mobno):
+    try:
+        if request.method == 'GET':
+            ins = AdminUser.objects.get(Mobno=mobno)
+            print(ins)
+            data=Registration.objects.filter(user_category=ins)
+            print(data)
+            final_list = [(data.Name,data.Mobno,data.Email,data.account_name,data.Adhaar,data.device_details,data.user_category) for data in data]
+            return JsonResponse({"items":final_list})
+        else:
+            pass
+    except Exception as e:  
+            return JsonResponse({'error': str(e)}, status=500)
+
+
+@csrf_exempt
+def user_view(request,mobno):
+    try:
+        if request.method == 'GET':
+            ins = AdminUser.objects.get(Mobno=mobno)
+            list=User.objects.filter(user_category=ins)
+            final_list1 = [(list.Name,list.Mobno,list.Email) for list in list]
+            return JsonResponse({"items":final_list1})
+        else:
+            pass
+    except Exception as e:  
+            return JsonResponse({'error': str(e)}, status=500)
        
 @csrf_exempt
 def account_edit(request):
@@ -197,19 +272,6 @@ def account_view(request,mobno):
         else:
             return JsonResponse({'error': 'Account does not exist'}, status=400)
     except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
-    
-@csrf_exempt
-def user_view(request,arg):
-    try:
-        if request.method == 'GET':
-            ins = AdminUser.objects.get(Mobno=arg)
-            list=User.objects.filter(user_category=ins)
-            final_list1 = [(list.Name,list.Mobno,list.Email) for list in list]
-            return JsonResponse({"items":final_list1})
-        else:
-            pass
-    except Exception as e:  
             return JsonResponse({'error': str(e)}, status=500)
     
 
@@ -263,9 +325,16 @@ def device_create(request):
                 random_id = random.randrange(10000000000000,999999999999999)
                 print(random_id)
                 if not Device.objects.filter(device_id=random_id).exists():
+                    # params = {'host':'20.244.48.88','database':'iotdb','user':'bariflolabs','password':'bariflo123'}
+                    conn = connection.cursor()  
+                    print('Connected to the PostgreSQL database in device creation part...') 
+                    # cur = conn.cursor() 
+                    conn.execute(f'CREATE TABLE device_{random_id}(device BIGINT NOT NULL,param_type VARCHAR NOT NULL,param_value INTEGER NOT NULL,date DATE NOT NULL,time TIME NOT NULL);')
+                    # cur.close() 
+                    # conn.commit() 
                     new_device = Device(device_name=device_nm, device_type=device_type_instance, account=account, device_id=random_id)
                     new_device.save()
-                    return JsonResponse({'message': 'Device created successfully'}, status=201)
+                    return JsonResponse({'message':'Device created successfully'}, status=201)
                 else:
                     pass
                 
@@ -382,37 +451,47 @@ def permission_save(request,user_id):
     
 @csrf_exempt
 def datefilter(request,device_id,user_given_day):
-    data={}
-    # tm = []
     if request.method=="GET":
-        diff_time = timezone.now()-timedelta(days=user_given_day)    
-        types=['Ph','voltage','ORP','DO','Current','CPU_TEMPERATURE']
-        for typ in types:
-            result = Parameter.objects.filter(date__gte=diff_time,device=device_id,param_type=typ)
-            obj = [(dt.param_value) for dt in result]
-            time = [(dt.time) for dt in result]
-            data[typ]=obj
-            # if time not in tm:
-            #     tm.append(time)
-    return JsonResponse({"data":data,"time":time})
-            
+        diff_time = timezone.now()-timedelta(days=user_given_day)   
+        str_diff_time = diff_time.strftime("%Y-%m-%d") 
+        cur = connection.cursor()
+        cur.execute(f"SELECT * FROM public.device_{device_id} WHERE date >= '{str_diff_time}';")
+        data_list = cur.fetchall()
+        paramtype = []
+        time_set = []
+        dataset =[]
+        [paramtype.append(typ[1]) for typ in data_list if typ[1] not in paramtype]
+        [time_set.append(typ[4]) for typ in data_list if typ[4] not in time_set]
+        i=0
+        while i < len(paramtype):
+            b = [typ[2] for typ in data_list if typ[1]==paramtype[i]]
+            dataset.append({paramtype[i]:b})
+            i=i+1
+    # data={}
+
+    return JsonResponse((dataset,time_set),safe=False)
+                
 
 @csrf_exempt
 def custom_datefilter(request,device_id,from_date,to_date):    #  Date format must be (YYYY-MM-DD)
-    data={}
-    tm = []
-
     if request.method == "GET":
-        types=['Ph','voltage','ORP','DO','Current','CPU_TEMPERATURE']
-        for typ in types:
-            records = Parameter.objects.filter(date__range=(from_date, to_date),device=device_id,param_type=typ)
-            all_record = [(record.param_value) for record in records]
-            time_record = [(record.time) for record in records]
-            # if time_record not in tm:
-            #     tm.append(time_record)
-            data[typ] = all_record
+        cursor = connection.cursor()
+        cursor.execute(f"SELECT * FROM public.device_{device_id} WHERE date BETWEEN '{from_date}' and '{to_date}';")
+        data = cursor.fetchall()
+        from collections import deque
+        paramtype = deque([])
+        time_set = []
+        dataset =[]
+        [paramtype.append(typ[1]) for typ in data if typ[1] not in paramtype]
+        [time_set.append(typ[4]) for typ in data if typ[4] not in time_set]
+        # print(d)
+        i=0
+        while i < len(paramtype):
+            b = [typ[2] for typ in data if typ[1]==paramtype[i]]
+            dataset.append({paramtype[i]:b})
+            i=i+1
+        return JsonResponse((dataset,time_set),safe=False)
 
-    return JsonResponse({"data":data,"time":time_record})
             
 
 
@@ -523,7 +602,7 @@ def on_off_controls(request):
         "button":{
             "display_name":None,
             "virtual_pin":None,
-            "allow_user":None
+            "allow_user":None,
             }
         }
     if request.method == 'POST':
@@ -539,7 +618,8 @@ def on_off_controls(request):
             cntrl_data1['button']['display_name']=btn_dis
             cntrl_data1['button']['virtual_pin']=btn_pin
             cntrl_data1['button']['allow_user']=alw_usr
-            instance.delete()
+            print("instancccccccccccccccccccccccccccccce")
+            # instance.delete()
             lis = []
             lis.append(cntrl_data1)
             instance.controls= lis
@@ -615,12 +695,12 @@ def slider_controls(request):
             cntrl_data2['slider']['max']=slider_max
             cntrl_data2['slider']['step_value']=slider_step_value
             cntrl_data2['slider']['allow_user']=slider_allow_user
-            instance.delete()
+            # instance.delete()
             lis = []
             lis.append(cntrl_data2)
             instance.controls= lis
             instance.save()
-            return JsonResponse({"message":"PIN assigned with a value in slider in None condition"})
+            return JsonResponse({"message":"PIN assigned with a value in slider"})
 
         if a:
             avlbl_lst = []
@@ -669,9 +749,11 @@ def graph_controls(request):
     cntrl_data3 ={
         "graph":{
             "display_name":None,
-            "label":None,
-            "color":None,
-            "allow_user":None
+            # "params":[{"graph_label":None,"graph_color":None}],
+            "params":None,
+            "allow_user":None,
+            "x":None,
+            "y":None
         }
     }
     if request.method == 'POST':
@@ -679,18 +761,21 @@ def graph_controls(request):
         type_name = instance.get('type_name')
         type_ver = instance.get('type_ver')
         graph_dis = instance.get('graph_dis_name') if instance.get('graph_dis_name') else None
-        graph_label = instance.get('graph_label') if instance.get('graph_label') else None
-        graph_color = instance.get('graph_color') if instance.get('graph_color') else None
+        params = instance.get('params') if instance.get('params') else None
+        # graph_color = instance.get('graph_color') if instance.get('graph_color') else None
         alw_usr = instance.get('graph_allow_user') if instance.get('graph_allow_user') else None
+        x = instance.get('x') if instance.get('x') else None
+        y = instance.get('y') if instance.get('y') else None
         instance = DeviceType.objects.get(Name=type_name,version=type_ver)
         a = instance.controls
 
         if a == None:
             cntrl_data3['graph']['display_name']=graph_dis
-            cntrl_data3['graph']['label']=graph_label
-            cntrl_data3['graph']['color']=graph_color
+            cntrl_data3['graph']['params']=params
             cntrl_data3['graph']['allow_user']=alw_usr
-            instance.delete()
+            cntrl_data3['graph']['x']=x
+            cntrl_data3['graph']['y']=y
+            # instance.delete()
             lis = []
             lis.append(cntrl_data3)
             instance.controls= lis
@@ -703,32 +788,34 @@ def graph_controls(request):
                     avlbl_lst.append(key) 
             if 'graph' not in avlbl_lst:
                 cntrl_data3['graph']['display_name']=graph_dis
-                cntrl_data3['graph']['label']=graph_label
-                cntrl_data3['graph']['color']=graph_color
+                cntrl_data3['graph']['params']=params
                 cntrl_data3['graph']['allow_user']=alw_usr
+                cntrl_data3['graph']['x']=x
+                cntrl_data3['graph']['y']=y
                 lis = a
                 lis.append(cntrl_data3)
                 instance.controls = lis
                 instance.save()
                 return JsonResponse({"message":"New Line graph created"})
             elif 'graph' in avlbl_lst:
-                label_list = []
+                disp_list = []
                 for dictionary in a:
-                    if 'graph' in dictionary and 'label' in dictionary['graph']:
-                        values = dictionary['graph']['label']
-                        label_list.append(values)
-                if graph_label not in label_list:
+                    if 'graph' in dictionary and 'display_name' in dictionary['graph']:
+                        values = dictionary['graph']['display_name']
+                        disp_list.append(values)
+                if graph_dis not in disp_list:
                     cntrl_data3['graph']['display_name']=graph_dis
-                    cntrl_data3['graph']['label']=graph_label
-                    cntrl_data3['graph']['color']=graph_color
+                    cntrl_data3['graph']['params']=params
                     cntrl_data3['graph']['allow_user']=alw_usr
+                    cntrl_data3['graph']['x']=x
+                    cntrl_data3['graph']['y']=y
                     lis = a
                     lis.append(cntrl_data3)
                     instance.controls = lis
                     instance.save()
                     return JsonResponse({"message":"New Line graph created"})
-                else:
-                    return JsonResponse({"message":"Line graph label already assigned"})
+            else:
+                return JsonResponse({"message":"Line graph label already assigned"})
         else:
             return JsonResponse({"error":"Line graph label already assigned"})
 
@@ -783,9 +870,9 @@ def control_delete(request):
                         instance.save()
                         return JsonResponse({"message":"Removed"})
             if 'graph' in dict and 'display_name' in dict['graph']:
-                if 'graph' in dict and 'label' in dict['graph']:
+                if 'graph' in dict and 'params' in dict['graph']:
                     values1 = dict['graph']['display_name']
-                    values2 = dict['graph']['label']
+                    values2 = dict['graph']['params']
                 if display_name == values1 and virtual_pin == values2:
                     lists.remove(dict)
                     if len(lists) >= 1:
@@ -796,6 +883,8 @@ def control_delete(request):
                         instance.controls = None
                         instance.save()
                         return JsonResponse({"message":"Removed"})
+            
+
 
 @csrf_exempt
 def on_off_control_edit(request):
@@ -872,32 +961,71 @@ def graph_control_edit(request):
         type_ver = edit_instance.get('type_ver')
         control_key = edit_instance.get('control_key')
         old_name = edit_instance.get('old_dis_name')
-        old_label = edit_instance.get('old_label_name')
         new_name = edit_instance.get('new_dis_name')
-        new_label = edit_instance.get('new_label_name')
-        new_color = edit_instance.get('new_color')
+        # old_params = edit_instance.get('old_params')
+        new_params = edit_instance.get('new_params')
         new_alwusr = edit_instance.get('new_alwusr')
-        instance = DeviceType.objects.get(Name=type_name,version=type_ver)
+        # old_alwusr = edit_instance.get('old_alwusr')
+        new_x = edit_instance.get('new_x')
+        # old_x = edit_instance.get('old_x')
+        new_y = edit_instance.get('new_y')
+        # old_y = edit_instance.get('old_y')
+        instance = DeviceType.objects.get(Name=type_name, version=type_ver)
         a = instance.controls
         
-        for dictionary in a:
-            if control_key in dictionary and 'display_name' in dictionary[control_key]:
-                if control_key in dictionary and 'label' in dictionary[control_key]:
-                    value1 = dictionary[control_key]['display_name']
-                    value2 = dictionary[control_key]['label']
-                    if (value1==old_name and value2==old_label):
-                        update_dict = {"graph":{"display_name":new_name,"label":new_label,"color":new_color,"allow_user":new_alwusr}}
-                        if update_dict not in a:
-                            dictionary.update(update_dict)
-                            instance.save()
-                            return JsonResponse({"message":"Graph updated"})
-                        else:
-                            return JsonResponse({"message":"Label already in use"})
-                    else:
-                        pass
+        for i in a:
+            print("iii",i)
+            for key in i:
+                print("key",key)
+                if control_key == key and i[control_key]['display_name'] == old_name:
+                    print(i)
+                    update_dict = {
+                        "graph": {
+                            "display_name": new_name,
+                            "params": new_params,
+                            "x": new_x,
+                            "y": new_y,
+                            "allow_user": new_alwusr
+                        }
+                    }
+                    i.update(update_dict)
+                    instance.save()
+                    return JsonResponse({"message": "Updated"})
+                else:
+                    pass
 
-            
-                    
+
+@csrf_exempt
+def email_send(request,mobno):
+    if request.method == 'GET':
+        regd_data = Registration.objects.filter(Mobno=mobno)
+        user_data = User.objects.filter(Mobno=mobno)
+        for i in regd_data:
+            name = i.Name
+            username = i.Mobno
+            account = i.account_name
+            usr_cat = i.user_category
+            usr_email = i.Email
+            dvc_dtls = eval(i.device_details)
+            device = ""
+            for i in dvc_dtls:
+                extract = f"{i['value']} Device {i['count']}nos."
+                device+=extract
+        for n in user_data:
+            password=n.password
+
+        body = f"Hi {name},\nWelcome to Bariflolabs Pvt. Ltd.\n\nNow you are a {usr_cat} user in Bariflolabs\njust below your all details are there. Please check it out.\n\nUsername : {username}\nPassword : {password}\nAccount Name : {account}\nDevice details : {device}\n\n\nThanks and Regards\nM/S Bariflolabs Pvt. Ltd,Bhubaneswar"
+        subject = "Succesfully Registered"
+        send_mail(
+            subject,
+            body,
+            "care.bariflolabs@gmail.com",
+            [f"{usr_email}"],
+            fail_silently=False,    
+            )
+        user = Registration.objects.get(Mobno=mobno)
+        user.delete()
+        return JsonResponse({"message":"Email sent to the user successfully"},safe=False)
 
 @csrf_exempt
 def mqtt(request):
@@ -915,20 +1043,50 @@ def mqtt(request):
         }
         mqtt = Client()
         mqtt.username_pw_set('BarifloLabs','Bfl@123')
-        mqtt.connect('16.171.160.72',1883)
+        mqtt.connect('4.240.114.7',1883)
         mqtt.publish('',data)
 
+@csrf_exempt
+def forgot_password_email_verification(request):
+    if request.method == 'POST':
+        parse = JSONParser().parse(request)
+        user_email = parse.get('email')
+        data = User.objects.filter(Email=user_email)
+        if data.exists():
+            for i in data:
+                pass
+            otp = random.randrange(10000,99999)
 
-
-
-
-
-
-
-
-
-
-
+            body = f"Hi {i.Name}, You have requested for forgot password\n\nThis is your OTP for user verifications\n\n\n {otp}\n\n\nThank you for being a part of Bariflolabs Pvt. Ltd ..."
+            subject = "Request for Forgot Password"
+            send_mail(
+                subject,
+                body,
+                "care.bariflolabs@gmail.com",
+                [f"{user_email}"],
+                fail_silently=False,    
+                )
+            return JsonResponse({"message":"email verified! and otp sent to the user","otp":otp})
+        else:
+            return JsonResponse({"error":"entered email incorrect"})
+        
+@csrf_exempt
+def forgot_password_sent_to_user(request,user_email):
+    if request.method == 'GET':
+        data = User.objects.get(Email=user_email)
+        body = f"Hi {data.Name}, You have requested for forgot password before so, This is your User Password for user login\n\n{data.password}\n\n\nThank you for being a part of Bariflolabs Pvt. Ltd...."
+        subject = "User login password"
+        send_mail(
+            subject,
+            body,
+            "care.bariflolabs@gmail.com",
+            [f"{user_email}"],
+            fail_silently=False,    
+            )
+        return JsonResponse({"message":"password sent to the user"})
+    else:
+        return JsonResponse({"error":"entered otp incorrect"})
+        
 
 
 

@@ -2,15 +2,16 @@
 from django.contrib import admin
 from app1 import views
 from django.urls import path, include
-
+# from app1.tests import uid
 # router = DefaultRouter()
 # router.register(r'permissions', views.PermissionViewSet)
-
+# a = uid()
 
 urlpatterns = [
     
     path('admin/', admin.site.urls),
     path('registration/',views.registration),
+    path('register_view/<int:mobno>/',views.register_view),
     path('login/',views.login),
     path('account_view/<int:mobno>/',views.account_view),
     path('device_create/',views.device_create),
@@ -18,9 +19,12 @@ urlpatterns = [
     path('device_delete/',views.device_delete),
     path('device_view/<int:account_id>/',views.device_view),
     path('user/',views.user_create),
+    path('admincreate/',views.admincreate),
+    path('admin_delete/',views.admin_delete),
+    path('admin_view/',views.admin_view),
     path('account/',views.account_create),
     path('permission/<int:user_id>/',views.permission_save),
-    path('user_view/<arg>/',views.user_view),
+    path('user_view/<mobno>/',views.user_view),
     path('user_edit/',views.user_edit),
     path('user_delete/',views.user_delete),
     path('account_edit/',views.account_edit),
@@ -42,5 +46,8 @@ urlpatterns = [
     path('on_off_control_edit/',views.on_off_control_edit),
     path('slider_control_edit/',views.slider_control_edit),
     path('graph_control_edit/',views.graph_control_edit),
+    path('email_send/<mobno>/',views.email_send),
+    path('email_verification/',views.forgot_password_email_verification),
+    path('password_sent/<user_email>/',views.forgot_password_sent_to_user),
     
 ]
