@@ -84,19 +84,19 @@ ASGI_APPLICATION = 'IOT_Dashboard.asgi.application'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 # DATABASES = {
-    # 'default': {
-    #     'ENGINE': 'django.db.backends.sqlite3',
-    #     'NAME': BASE_DIR / 'db.sqlite3',
-    # }
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
 # }
 DATABASES = {
-    'default': {
+    'default':{
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'aquadb',                      
         'USER': 'bariflolabs',
-        'PASSWORD': 'bariflo@2024',
+        'PASSWORD': 'bariflo2024',
         'HOST': '4.188.244.11',
-        'PORT': '5432',
+        'PORT': '5432', 
     }
 }
 
@@ -161,5 +161,7 @@ CORS_ALLOWED_ORIGINS = [
     'http://4.240.1.15',
     'http://aqua.bariflorobotics.com',
     'http://20.235.248.237:4200',
-    'http://localhost:4200'
+    'http://20.235.248.237:53374',
+    'http://localhost:4200',
+    'http://localhost:53374'
 ]

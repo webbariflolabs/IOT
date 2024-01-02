@@ -48,5 +48,7 @@ urlpatterns = [
     path('email_send/<mobno>/',views.email_send),
     path('email_verification/',views.forgot_password_email_verification),
     path('password_sent/<user_email>/',views.forgot_password_sent_to_user),
+    path('token_verification/',views.token_verification,name='token_verification'),
+    
     
 ]

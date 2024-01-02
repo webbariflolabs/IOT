@@ -6,9 +6,8 @@ class Registration(models.Model):
     Name=models.CharField(max_length=20)
     Email=models.EmailField()
     Mobno=models.BigIntegerField(primary_key=True)
-    Adhaar=models.IntegerField()
-    account_name=models.CharField(max_length=50)
-    device_details=models.CharField(max_length=200)
+    Adhaar=models.BigIntegerField()
+    params = models.JSONField(null=True,blank=True)
     USER_TYPES = (
         ('3d', '3D PRINTING'),
         ('aqua', 'AQUA CULTURE'),
@@ -36,6 +35,7 @@ class AdminUser(models.Model):
     )
     user_category = models.CharField(max_length=20, choices=USER_TYPES,default=USER_TYPES)
     user_img = models.ImageField(upload_to=admin_img,blank=True)
+    token = models.CharField(max_length=100)
     def __str__(self):
         name = f"{self.user_category}"
         return name
@@ -47,7 +47,8 @@ class User(models.Model):
     Email=models.EmailField()
     Mobno=models.BigIntegerField(primary_key=True)
     password=models.CharField(max_length=20)
-    Adhaar=models.IntegerField()
+    Adhaar=models.BigIntegerField()
+    token = models.CharField(max_length=100)
     user_pic=models.ImageField(upload_to='user_img/',blank=True)
     user_docs=models.FileField(upload_to='user_docs/',blank=True)
     user_category=models.ForeignKey(AdminUser, on_delete=models.CASCADE)
@@ -57,7 +58,7 @@ class User(models.Model):
 
 class Account(models.Model):
     account_name = models.CharField(max_length=100)
-    Account_id = models.IntegerField(primary_key=True)
+    Account_id = models.BigIntegerField(primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='accounts')
     
     def __str__(self):
@@ -66,14 +67,14 @@ class Account(models.Model):
     
 class DeviceType(models.Model):
       Name=models.CharField(max_length=24)
-      version=models.IntegerField()
+      version=models.BigIntegerField()
       controls = models.JSONField(null=True,blank=True)
       def __str__(self):
           name=f"{self.Name} {self.version}"
           return name
 
 class Device(models.Model):
-    device_id = models.IntegerField(primary_key=True)
+    device_id = models.BigIntegerField(primary_key=True)
     device_name = models.CharField(max_length=100)
     account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name='accounts')
     device_type = models.ForeignKey(DeviceType, on_delete=models.Aggregate, related_name='device_type')

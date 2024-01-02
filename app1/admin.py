@@ -4,7 +4,7 @@ from .models import *
 
 @admin.register(Registration)
 class Registration(admin.ModelAdmin):
-    list_display = ['Name','Email','Mobno','Adhaar','account_name','device_details','user_category']
+    list_display = ['Name','Email','Mobno','Adhaar','params','user_category']
 
 @admin.register(SuperAdmin)
 class SuperAdminUser(admin.ModelAdmin):
@@ -12,11 +12,11 @@ class SuperAdminUser(admin.ModelAdmin):
 
 @admin.register(AdminUser)
 class AdminUser(admin.ModelAdmin):
-    list_display = ['Name','Email','Mobno','password','user_category','user_img']
+    list_display = ['Name','Email','Mobno','password','user_category','user_img','token']
 
 @admin.register(User)
 class User(admin.ModelAdmin):
-    list_display = ['Name','Email','Mobno','password','Adhaar','user_category','user_pic','user_docs']
+    list_display = ['Name','Email','Mobno','password','Adhaar','user_category','user_pic','user_docs','token']
 
 @admin.register(Account)
 class Account(admin.ModelAdmin):

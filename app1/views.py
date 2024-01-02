@@ -28,6 +28,23 @@ from django.db import connection
 #    csrf_token1=get_token(request)
 #    return JsonResponse({"csrf_token":csrf_token1})
 @csrf_exempt
+def token_verification(request):
+    if request.method == 'POST':
+        jsondata = JSONParser().parse(request)
+        category = jsondata.get('category')
+        token = jsondata.get('token')
+
+        try:
+            if category == 'aquaUser':
+                data = User.objects.get(token=token)
+                return JsonResponse({'message': 'Authenticated successfully.',"username":data.Name,"mobile_no":data.Mobno})
+            else:
+                data = AdminUser.objects.get(token=token)
+                return JsonResponse({'message': 'Authenticated successfully.',"username":data.Name,"mobile_no":data.Mobno})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+        
+@csrf_exempt
 def registration(request):
     if request.method == 'POST':
         regd_instance=JSONParser().parse(request)
@@ -62,15 +79,27 @@ def admincreate(request):
         email=request.data['email']
         mobno=request.data['mobno']
         password=request.data['password']
-        usertype=request.data['usertype']
+        usertype=request.data['user_cat']
         fullname=firstname+" "+lastname
         a = AdminUser.objects.filter(Mobno=mobno)
         b = User.objects.filter(Mobno=mobno)
         if b.exists():
             return JsonResponse({"message":"Mobile no already used as General User"})
         if not a.exists():
-            datas = AdminUser(Name=fullname,Email=email,Mobno=mobno,password=password,user_category=usertype,user_img=userimg)
+            token = get_token(request)
+            datas = AdminUser(Name=fullname,Email=email,Mobno=mobno,password=password,user_category=usertype,user_img=userimg,token=token)
             datas.save()
+            param = {
+                    'host':'20.244.37.91',
+                    'database':'logindb',
+                    'user':'bariflolabs',
+                    'password':'bariflo2024'
+                    }
+            conn = psycopg2.connect(**param)
+            print("connected")
+            cur = conn.cursor() 
+            cur.execute('INSERT INTO public.myapp_adminuser("Name", "Email", "Mobno", "password", "token", "user_category") VALUES (%s, %s, %s, %s, %s, %s);', (f'{fullname}', f'{email}', f'{mobno}', f'{password}', f'{token}', f'{usertype}'))
+            conn.commit()
             return JsonResponse({"message":"Admin User created"})
         else:
             return JsonResponse({"message":"Mobile no. already exists"})
@@ -190,12 +219,24 @@ def user_create(request):
        user_pic=request.data['user_pic']
        user_docs=request.data['user_docs']
 
-       try:
+       try: 
+            token = get_token(request)
             user_instance = Registration.objects.get(Mobno=mobno)
             user_category_instance = AdminUser.objects.get(user_category=user_instance.user_category)
             if not User.objects.filter(Mobno=mobno).exists():
-                user=User(Name=user_instance.Name,Email=user_instance.Email,Mobno=mobno,password=password,Adhaar=user_instance.Adhaar,user_pic=user_pic,user_docs=user_docs,user_category=user_category_instance)
+                user=User(Name=user_instance.Name,Email=user_instance.Email,Mobno=mobno,password=password,Adhaar=user_instance.Adhaar,user_pic=user_pic,user_docs=user_docs,user_category=user_category_instance,token=token)
                 user.save()
+                param = {
+                    'host':'20.244.37.91',
+                    'database':'logindb',
+                    'user':'bariflolabs',
+                    'password':'bariflo2024'
+                    }
+                conn = psycopg2.connect(**param)
+                print("connected")
+                cur = conn.cursor() 
+                cur.execute('INSERT INTO public.myapp_user("Name", "Email", "Mobno", "password", "Adhaar", "token", "user_category") VALUES (%s, %s, %s, %s, %s, %s, %s);', (f'{user_instance.Name}', f'{user_instance.Email}', f'{user_instance.Mobno}', f'{password}', f'{user_instance.Adhaar}', f'{token}', f'{user_category_instance}'))
+                conn.commit()
                 return JsonResponse({"message":"User Created"})
             else:
                 return JsonResponse({"message":"User already exists,Report to Admin"})
