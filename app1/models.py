@@ -90,3 +90,18 @@ class Data(models.Model):
     date = models.DateField(default=timezone.now)
     time = models.TimeField(default=timezone.now)
 
+class Thermal_Actual_Image(models.Model):
+      image=models.ImageField(upload_to='thermal_images/', blank=True, null=True)
+      user = models.ForeignKey(User, on_delete=models.CASCADE)
+      date = models.DateField(default=timezone.now)
+      def __str__(self):
+          name=f"{self.user.Name}"
+          return name
+      
+class OcrImage(models.Model):
+      image=models.ImageField(upload_to='Ocr_images/', blank=True, null=True)
+      user = models.ForeignKey(User, on_delete=models.CASCADE)
+      date = models.DateField(default=timezone.now)
+      def __str__(self):
+          name=f"{self.user.Name}"
+          return name

@@ -67,120 +67,69 @@ def registration(request):
             else:
                 return JsonResponse({"massage":"User Mobile number already registered, Report to Admin"})
         except Exception as e:
-             return JsonResponse({'error': str(e)}, status=500)
+            return JsonResponse({'error': str(e)}, status=500)
         
-@api_view(['POST'])
-@csrf_exempt        
-def admincreate(request):
-    if request.method == 'POST':
-        userimg=request.data['userimg']
-        firstname=request.data['firstname']
-        lastname=request.data['lastname']
-        email=request.data['email']
-        mobno=request.data['mobno']
-        password=request.data['password']
-        usertype=request.data['user_cat']
-        fullname=firstname+" "+lastname
-        a = AdminUser.objects.filter(Mobno=mobno)
-        b = User.objects.filter(Mobno=mobno)
-        if b.exists():
-            return JsonResponse({"message":"Mobile no already used as General User"})
-        if not a.exists():
-            token = get_token(request)
-            datas = AdminUser(Name=fullname,Email=email,Mobno=mobno,password=password,user_category=usertype,user_img=userimg,token=token)
-            datas.save()
-            param = {
-                    'host':'20.244.37.91',
-                    'database':'logindb',
-                    'user':'bariflolabs',
-                    'password':'bariflo2024'
-                    }
-            conn = psycopg2.connect(**param)
-            print("connected")
-            cur = conn.cursor() 
-            cur.execute('INSERT INTO public.myapp_adminuser("Name", "Email", "Mobno", "password", "token", "user_category") VALUES (%s, %s, %s, %s, %s, %s);', (f'{fullname}', f'{email}', f'{mobno}', f'{password}', f'{token}', f'{usertype}'))
-            conn.commit()
-            return JsonResponse({"message":"Admin User created"})
-        else:
-            return JsonResponse({"message":"Mobile no. already exists"})
-    else:
-        return JsonResponse({"message":"Mobile no. already exists"})
-
-@csrf_exempt        
-def admin_delete(request):
-    if request.method == 'POST':
-        admininstance = JSONParser().parse(request)
-        mobno=admininstance.get('mobno')
-        a = AdminUser.objects.get(Mobno=mobno)
-        a.delete()
-        return JsonResponse({"message":"Admin deleted"})
-    
-@csrf_exempt        
-def admin_view(request):
-    if request.method == 'GET':
-        a = AdminUser.objects.all()
-        data = [(i.Name,i.Email,i.Mobno,i.user_category,i.password) for i in a]
-        return JsonResponse({"datas":data})
 
 @csrf_exempt        
 def login(request):
     if request.method == 'POST':
-       userdata=JSONParser().parse(request)
-       phone=userdata.get('mobileno')
-       password=userdata.get('password')
-       try:
-            if type(phone)==int:
-                if User.objects.filter(Mobno=phone).exists():
-                    users = User.objects.get(Mobno=phone)
-                    if phone == users.Mobno and str(users.user_category) == "3d" and password == users.password:
-                        return JsonResponse({'message':"Login Successfull For 3D User",'username':users.Name,'mobno':users.Mobno})
-                    elif phone == users.Mobno and str(users.user_category) == "water" and password == users.password:
-                        return JsonResponse({'message':"Login Successfull For waterbody User",'username':users.Name,'mobno':users.Mobno})
-                    elif phone == users.Mobno and str(users.user_category) == "aqua" and password == users.password:
-                        return JsonResponse({'message':"Login Successfull For aqua User",'username':users.Name,'mobno':users.Mobno})
-                    else:  
-                        return JsonResponse({'error':"Invalid credential for General user"})
-                if AdminUser.objects.filter(Mobno=phone).exists():
-                    admin = AdminUser.objects.get(Mobno=phone)
-                    if phone == admin.Mobno and str(admin.user_category) == "3d" and password == admin.password:
-                        return JsonResponse({'message':"Login Successfull For 3D Admin",'username':admin.Name,'mobno':admin.Mobno})
-                    elif phone == admin.Mobno and str(admin.user_category) == "water" and password == admin.password:
-                        return JsonResponse({'message':"Login Successfull For waterbody Admin",'username':admin.Name,'mobno':admin.Mobno})
-                    elif phone == admin.Mobno and str(admin.user_category) == "aqua" and password == admin.password:
-                        return JsonResponse({'message':"Login Successfull For aqua Admin",'username':admin.Name,'mobno':admin.Mobno})
-                    else:  
-                        return JsonResponse({'error':"Invalid credential for Admin user"})
-            if type(phone)==str:
-                if User.objects.filter(Email=phone).exists():
-                    users=User.objects.get(Email=phone)
-                    if phone == users.Email and str(users.user_category) == "3d" and password == users.password:
-                        return JsonResponse({'message':"Login Successfull For 3D User",'username':users.Name,'mobno':users.Mobno})
-                    elif phone == users.Email and str(users.user_category) == "water" and password == users.password:
-                        return JsonResponse({'message':"Login Successfull For waterbody User",'username':users.Name,'mobno':users.Mobno})
-                    elif phone == users.Email and str(users.user_category) == "aqua" and password == users.password:
-                        return JsonResponse({'message':"Login Successfull For aqua User",'username':users.Name,'mobno':users.Mobno})
-                    else:  
-                        return JsonResponse({'error':"Invalid credential for general user"})
-                if SuperAdmin.objects.filter(Username=phone).exists():
-                    admin = SuperAdmin.objects.get(Username=phone)
-                    if phone == admin.Username and password == admin.Password:
-                        return JsonResponse({'message':"Login Successfull For  SuperAdmin",'username':admin.Username,'password':admin.Password})
-                    else:  
-                        return JsonResponse({'error':"Invalid credential for SuperAdmin user"})
-                if AdminUser.objects.filter(Email=phone).exists():
-                    admin = AdminUser.objects.get(Email=phone)
-                    if phone == admin.Email and str(admin.user_category) == "3d" and password == admin.password:
-                        return JsonResponse({'message':"Login Successfull For 3D Admin",'username':admin.Name,'mobno':admin.Mobno})
-                    elif phone == admin.Email and str(admin.user_category) == "water" and password == admin.password:
-                        return JsonResponse({'message':"Login Successfull For waterbody Admin",'username':admin.Name,'mobno':admin.Mobno})
-                    elif phone == admin.Email and str(admin.user_category) == "aqua" and password == admin.password:
-                        return JsonResponse({'message':"Login Successfull For aqua Admin",'username':admin.Name,'mobno':admin.Mobno})
-                    else:  
-                        return JsonResponse({'error':"Invalid credential for Admin user"})
+        userdata=JSONParser().parse(request)
+        phone=userdata.get('mobileno')
+        password=userdata.get('password')
+    #    try:
+        if type(phone)==int:
+            if User.objects.filter(Mobno=phone).exists():
+                users = User.objects.get(Mobno=phone)
+                if phone == users.Mobno and str(users.user_category) == "3d" and password == users.password:
+                    return JsonResponse({'message':"Login Successfull For 3D User",'username':users.Name,'mobno':users.Mobno})
+                elif phone == users.Mobno and str(users.user_category) == "water" and password == users.password:
+                    return JsonResponse({'message':"Login Successfull For waterbody User",'username':users.Name,'mobno':users.Mobno})
+                elif phone == users.Mobno and str(users.user_category) == "aqua" and password == users.password:
+                    return JsonResponse({'message':"Login Successfull For aqua User",'username':users.Name,'mobno':users.Mobno})
+                else:  
+                    return JsonResponse({'error':"Invalid credential for General user"})
+            if AdminUser.objects.filter(Mobno=phone).exists():
+                admin = AdminUser.objects.get(Mobno=phone)
+                if phone == admin.Mobno and str(admin.user_category) == "3d" and password == admin.password:
+                    return JsonResponse({'message':"Login Successfull For 3D Admin",'username':admin.Name,'mobno':admin.Mobno})
+                elif phone == admin.Mobno and str(admin.user_category) == "water" and password == admin.password:
+                    return JsonResponse({'message':"Login Successfull For waterbody Admin",'username':admin.Name,'mobno':admin.Mobno})
+                elif phone == admin.Mobno and str(admin.user_category) == "aqua" and password == admin.password:
+                    return JsonResponse({'message':"Login Successfull For aqua Admin",'username':admin.Name,'mobno':admin.Mobno,'img':str(admin.user_img.url)})
                 else:  
                     return JsonResponse({'error':"Invalid credential for Admin user"})
-       except:
-            return JsonResponse("Invalid Credentials",safe=False)
+        if type(phone)==str:
+            if User.objects.filter(Email=phone).exists():
+                users=User.objects.get(Email=phone)
+                if phone == users.Email and str(users.user_category) == "3d" and password == users.password:
+                    return JsonResponse({'message':"Login Successfull For 3D User",'username':users.Name,'mobno':users.Mobno})
+                elif phone == users.Email and str(users.user_category) == "water" and password == users.password:
+                    return JsonResponse({'message':"Login Successfull For waterbody User",'username':users.Name,'mobno':users.Mobno})
+                elif phone == users.Email and str(users.user_category) == "aqua" and password == users.password:
+                    return JsonResponse({'message':"Login Successfull For aqua User",'username':users.Name,'mobno':users.Mobno})
+                else:  
+                    return JsonResponse({'error':"Invalid credential for general user"})
+            if SuperAdmin.objects.filter(Username=phone).exists():
+                admin = SuperAdmin.objects.get(Username=phone)
+                if phone == admin.Username and password == admin.Password:
+                    return JsonResponse({'message':"Login Successfull For  SuperAdmin",'username':admin.Username,'password':admin.Password})
+                else:  
+                    return JsonResponse({'error':"Invalid credential for SuperAdmin user"})
+            if AdminUser.objects.filter(Email=phone).exists():
+                admin = AdminUser.objects.get(Email=phone)
+                print(admin.user_img)
+                if phone == admin.Email and str(admin.user_category) == "3d" and password == admin.password:
+                    return JsonResponse({'message':"Login Successfull For 3D Admin",'username':admin.Name,'mobno':admin.Mobno})
+                elif phone == admin.Email and str(admin.user_category) == "water" and password == admin.password:
+                    return JsonResponse({'message':"Login Successfull For waterbody Admin",'username':admin.Name,'mobno':admin.Mobno})
+                elif phone == admin.Email and str(admin.user_category) == "aqua" and password == admin.password:
+                    return JsonResponse({'message':"Login Successfull For aqua Admin",'img':str(admin.user_img.url),'mobno':admin.Mobno})
+                else:  
+                    return JsonResponse({'error':"Invalid credential for Admin user"})
+            else:  
+                return JsonResponse({'error':"Invalid credential for Admin user"})
+    #    except:
+    #         return JsonResponse("Invalid Credentials",safe=False)
 
 
 @csrf_exempt
@@ -251,7 +200,7 @@ def register_view(request,mobno):
             print(ins)
             data=Registration.objects.filter(user_category=ins)
             print(data)
-            final_list = [(data.Name,data.Mobno,data.Email,data.account_name,data.Adhaar,data.device_details,data.user_category) for data in data]
+            final_list = [(data.Name,data.Mobno,data.Email,data.params,data.Adhaar,data.user_category) for data in data]
             return JsonResponse({"items":final_list})
         else:
             pass
@@ -341,6 +290,17 @@ def user_delete(request):
         user=JSONParser().parse(request)
         user_mob=user.get('mobileno')
         try:
+            param = {
+                    'host':'20.244.37.91',
+                    'database':'logindb',
+                    'user':'bariflolabs',
+                    'password':'bariflo2024'
+                    }
+            conn = psycopg2.connect(**param)
+            print("connected")
+            cur = conn.cursor() 
+            cur.execute(f'DELETE FROM public.myapp_user WHERE "Mobno"={user_mob};')
+            conn.commit()
             user=User.objects.get(Mobno=user_mob)
             user.delete()
             return JsonResponse({"message":"User deleted successfully"})
@@ -482,16 +442,18 @@ def custom_datefilter(request,device_id,from_date,to_date):    #  Date format mu
 
 
 @csrf_exempt
-def download_excel(request,device_id,data_type,from_date,to_date):
+def custom_date_data_download(request,device_id,data_type,from_date,to_date):
     if request.method == "GET":
         records = Data.objects.filter(date__range=(from_date, to_date),device=device_id,param_type=data_type)
-
-        id = [record.device.device_id for record in records]
         data = [record.param_value for record in records]
+        date = [record.date.strftime("%Y-%m-%d") for record in records]
+        time = [record.time.strftime("%H:%M:%S") for record in records]
         
         dict_data = {
             "Device_id":id,
-            "Data" : data
+            "Values" : data,
+            "Time" : time,
+            "Date" : date,
         }
         final_result = pd.DataFrame(dict_data)
 
@@ -511,10 +473,12 @@ def fixed_date_data_download(request,device_id,user_given_day,data_type):
         result = Data.objects.filter(date__gte=diff_time,device=device_id,param_type=data_type)
         data = [dt.param_value for dt in result]
         id = [dt.device.device_id for dt in result]
+        # data_time = [dt.device.date for dt in result]
 
         dict_data={
             "Device_id":id,
-            "Data":data
+            "Data":data,
+
             } 
         final_result = pd.DataFrame(dict_data)
         response = HttpResponse(content_type='text/csv')
@@ -948,14 +912,10 @@ def graph_control_edit(request):
         control_key = edit_instance.get('control_key')
         old_name = edit_instance.get('old_dis_name')
         new_name = edit_instance.get('new_dis_name')
-        # old_params = edit_instance.get('old_params')
         new_params = edit_instance.get('new_params')
         new_alwusr = edit_instance.get('new_alwusr')
-        # old_alwusr = edit_instance.get('old_alwusr')
         new_x = edit_instance.get('new_x')
-        # old_x = edit_instance.get('old_x')
         new_y = edit_instance.get('new_y')
-        # old_y = edit_instance.get('old_y')
         instance = DeviceType.objects.get(Name=type_name, version=type_ver)
         a = instance.controls
         
@@ -989,18 +949,20 @@ def email_send(request,mobno):
         for i in regd_data:
             name = i.Name
             username = i.Mobno
-            account = i.account_name
+            params = i.params
             usr_cat = i.user_category
             usr_email = i.Email
-            dvc_dtls = eval(i.device_details)
-            device = ""
-            for i in dvc_dtls:
-                extract = f"{i['value']} Device {i['count']}nos."
-                device+=extract
+            # dvc_dtls = eval(i.device_details)
+            data =[]
+            for i in params:
+                data.append(params[i])
+            device = f"{data[1][0]['value']} Device {data[1][0]['count']}nos."
+
         for n in user_data:
             password=n.password
 
-        body = f"Hi {name},\nWelcome to Bariflolabs Pvt. Ltd.\n\nNow you are a {usr_cat} user in Bariflolabs\njust below your all details are there. Please check it out.\n\nUsername : {username}\nPassword : {password}\nAccount Name : {account}\nDevice details : {device}\n\n\nThanks and Regards\nM/S Bariflolabs Pvt. Ltd,Bhubaneswar"
+        body = f"Hi {name},\nWelcome to Bariflolabs Pvt. Ltd.\n\nNow you are a {usr_cat} user in Bariflolabs\njust below your all details are there. Please check it out.\n\nUsername : {username}\nPassword : {password}\nAccount Name : {data[0]}\nDevice details : {device}\n\n\nThanks and Regards\nM/S Bariflolabs Pvt. Ltd,Bhubaneswar"
+        print(body)
         subject = "Succesfully Registered"
         send_mail(
             subject,
@@ -1009,8 +971,7 @@ def email_send(request,mobno):
             [f"{usr_email}"],
             fail_silently=False,    
             )
-        user = Registration.objects.get(Mobno=mobno)
-        user.delete()
+        regd_data.delete()
         return JsonResponse({"message":"Email sent to the user successfully"},safe=False)
 
 @csrf_exempt
@@ -1072,9 +1033,34 @@ def forgot_password_sent_to_user(request,user_email):
         return JsonResponse({"message":"password sent to the user"})
     else:
         return JsonResponse({"error":"entered otp incorrect"})
-        
+@csrf_exempt
+def thermal_actual_image(request,mobno,user_given_day):
+    if request.method == 'GET':
+        instance = JSONParser().parse(request)
+        diff_time = timezone.now()-timedelta(days=user_given_day) 
+        str_diff_time = diff_time.strftime("%Y-%m-%d") 
+        # try:
+        data = Thermal_Actual_Image.objects.filter(user=mobno,date = str_diff_time).order_by('-id')[:2]
+        for i in data:
+            a = i.image
 
-
+            print(i.image)
+        # except:
+        #     return JsonResponse({"eror":"AN ERROR OCCURED"},status=400)
+            
+from app1.tests import testing 
+@api_view(['POST'])
+@csrf_exempt
+def ocr(request):
+    if request.method == 'POST':
+        img = request.data['image']
+        print(img)
+        mobno = request.data['mobno']
+        user_data = User.objects.get(Mobno=mobno)
+        data = OcrImage(image=img,user=user_data)
+        data.save()
+        data = testing(user_data)
+        return JsonResponse({"message": data})
 
 
 

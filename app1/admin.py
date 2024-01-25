@@ -34,4 +34,12 @@ class Data(admin.ModelAdmin):
 class DeviceType(admin.ModelAdmin):
     list_display = ['Name','version','controls']
 
+@admin.register(Thermal_Actual_Image)
+class Thermal_Actual_Image(admin.ModelAdmin):
+    list_display = ['id','image','user','date']
+
+@admin.register(OcrImage)
+class OcrImage(admin.ModelAdmin):
+    list_display = ['id','image','user']   
+
 
