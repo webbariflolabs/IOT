@@ -54,15 +54,18 @@ def publishData(s1):
 
 
 def reciveData(s1):
-    client = mqtt.Client("Recive")
-    client.username_pw_set(s1.username, s1.password)
-    client.connect(s1.mqttBroker, port=s1.port)
+    try : 
+        client = mqtt.Client("Recive")
+        client.username_pw_set(s1.username, s1.password)
+        client.connect(s1.mqttBroker, port=s1.port)
 
-    client.on_message = on_message
+        client.on_message = on_message
 
-    client.subscribe("BinFile")
+        client.subscribe("topic1234")
 
-    client.loop_forever()
+        client.loop_forever()
+    except KeyboardInterrupt :
+        client.loop_stop()
 
 if __name__ == "__main__":
     broker_address = "4.240.114.7"

@@ -1,6 +1,8 @@
 from django.db import models
 from django.utils import timezone
 import datetime
+from django.contrib.gis.db import models
+from django.contrib.gis.geos import Point
 
 class Registration(models.Model):
     Name=models.CharField(max_length=20)
@@ -41,8 +43,6 @@ class AdminUser(models.Model):
         return name
 
 class User(models.Model):
-    # def name(self):
-    #     return Na
     Name=models.CharField(max_length=20)
     Email=models.EmailField()
     Mobno=models.BigIntegerField(primary_key=True)
@@ -59,8 +59,9 @@ class User(models.Model):
 class Account(models.Model):
     account_name = models.CharField(max_length=100)
     Account_id = models.BigIntegerField(primary_key=True)
+    area = models.CharField(max_length=100)
+    location = models.PointField(geography=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='accounts')
-    
     def __str__(self):
         data=f"{self.account_name}"
         return data
@@ -70,18 +71,25 @@ class DeviceType(models.Model):
       version=models.BigIntegerField()
       controls = models.JSONField(null=True,blank=True)
       def __str__(self):
-          name=f"{self.Name} {self.version}"
+          name=f"{self.Name}"
           return name
-
+      
 class Device(models.Model):
     device_id = models.BigIntegerField(primary_key=True)
     device_name = models.CharField(max_length=100)
     account = models.ForeignKey(Account, on_delete=models.CASCADE, related_name='accounts')
-    device_type = models.ForeignKey(DeviceType, on_delete=models.Aggregate, related_name='device_type')
-    def __str__(self):
-        data=f"{self.device_id}"
-        return data
+    device_type = models.ForeignKey(DeviceType, on_delete=models.CASCADE, related_name='device_type')
+    sensors = models.JSONField(max_length=100, blank=True, null=True, default=list)
 
+    def save(self, *args, **kwargs):
+        if self.device_type.Name == 'Aeration':
+            self.sensors = ['current', 'voltage']
+        else:
+            self.sensors = ['do', 'ph', 'orp']
+        super().save(*args, **kwargs)
+    def __str__(self):
+          name=f"{self.device_name}"
+          return name
 
 class Data(models.Model):
     device = models.ForeignKey(Device,on_delete=models.CASCADE,to_field='device_id')  # Renamed to avoid conflict
@@ -101,6 +109,7 @@ class Thermal_Actual_Image(models.Model):
 class OcrImage(models.Model):
       image=models.ImageField(upload_to='Ocr_images/', blank=True, null=True)
       user = models.ForeignKey(User, on_delete=models.CASCADE)
+      name = models.CharField(max_length=100)
       date = models.DateField(default=timezone.now)
       def __str__(self):
           name=f"{self.user.Name}"

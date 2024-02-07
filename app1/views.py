@@ -95,7 +95,7 @@ def login(request):
                 elif phone == admin.Mobno and str(admin.user_category) == "water" and password == admin.password:
                     return JsonResponse({'message':"Login Successfull For waterbody Admin",'username':admin.Name,'mobno':admin.Mobno})
                 elif phone == admin.Mobno and str(admin.user_category) == "aqua" and password == admin.password:
-                    return JsonResponse({'message':"Login Successfull For aqua Admin",'username':admin.Name,'mobno':admin.Mobno,'img':str(admin.user_img.url)})
+                    return JsonResponse({'message':"Login Successfull For aqua Admin",'username':admin.Name,'mobno':admin.Mobno})
                 else:  
                     return JsonResponse({'error':"Invalid credential for Admin user"})
         if type(phone)==str:
@@ -123,7 +123,7 @@ def login(request):
                 elif phone == admin.Email and str(admin.user_category) == "water" and password == admin.password:
                     return JsonResponse({'message':"Login Successfull For waterbody Admin",'username':admin.Name,'mobno':admin.Mobno})
                 elif phone == admin.Email and str(admin.user_category) == "aqua" and password == admin.password:
-                    return JsonResponse({'message':"Login Successfull For aqua Admin",'img':str(admin.user_img.url),'mobno':admin.Mobno})
+                    return JsonResponse({'message':"Login Successfull For aqua Admin",'mobno':admin.Mobno,'username':admin.Name})
                 else:  
                     return JsonResponse({'error':"Invalid credential for Admin user"})
             else:  
@@ -135,27 +135,31 @@ def login(request):
 @csrf_exempt
 def account_create(request):
     if request.method == 'POST':
-       account_page = JSONParser().parse(request)
-       account_nm=account_page.get('accountname')
-       user_mobno=account_page.get('usermobno')
-       print(account_nm)
-       try:
-           if Account.objects.filter(account_name=account_nm,user=user_mobno).exists():
-                return JsonResponse({"error":"Account already exists"})
-           else:
+        account_page = JSONParser().parse(request)
+        account_nm=account_page.get('accountname')
+        user_mobno=account_page.get('usermobno')
+        lat = account_page.get('lat')
+        long = account_page.get('long')
+        address = account_page.get('address')
+        print(account_nm)
+    #    try:
+        if Account.objects.filter(account_name=account_nm,user=user_mobno).exists():
+            return JsonResponse({"error":"Account already exists"})
+        else:
             while True:
-                 user_instance = User.objects.get(Mobno=user_mobno)
-                 accountid=random.randrange(100000000,9999999999999)
-                 print(accountid)
-                 if not Account.objects.filter(Account_id=accountid).exists():
-                     accountsave=Account(account_name=account_nm, Account_id=accountid,user=user_instance)
-                     accountsave.save()
-                     return JsonResponse({"message":"Account created","accountid":accountid},safe=False)
-                 else:
-                     pass
+                user_instance = User.objects.get(Mobno=user_mobno)
+                accountid=random.randrange(100000000,9999999999999)
+                print(accountid)
+                if not Account.objects.filter(Account_id=accountid).exists():
+                    location = Point(float(lat),float(long))
+                    accountsave=Account(account_name=account_nm, Account_id=accountid,user=user_instance,location=location,area=address)
+                    accountsave.save()
+                    return JsonResponse({"message":"Account created","accountid":accountid},safe=False)
+                else:
+                    pass
                 
-       except Exception as e:
-             return JsonResponse({'error': str(e)}, status=500)
+    #    except Exception as e:
+    #          return JsonResponse({'error': str(e)}, status=500)
        
 
 @api_view(['POST'])          
@@ -249,21 +253,36 @@ def account_delete(request):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
 
+from django.http import JsonResponse
+
+from django.http import JsonResponse
+
 @csrf_exempt
-def account_view(request,mobno):
-    try:
-        if request.method == 'GET':
-            list=Account.objects.filter(user=mobno)
-            final_list = [(list.account_name,list.Account_id) for list in list]
-            if final_list:
-                return JsonResponse({"items":final_list})
+def account_view(request, mobno):
+    if request.method == 'GET':
+        accounts = Account.objects.filter(user=mobno)
+        final_list = []
+
+        for account in accounts:
+            dvc_data = Device.objects.filter(account=account.Account_id)
+            device_ids = len([dvc.device_id for dvc in dvc_data])
+
+            account_details = [
+                account.account_name,
+                account.Account_id,
+                account.location.x,
+                account.location.y,
+                account.area
+            ]
+
+            if device_ids:
+                account_details.append(device_ids)
             else:
-                return JsonResponse({'error': 'Account does not exist'}, status=400)
-        else:
-            return JsonResponse({'error': 'Account does not exist'}, status=400)
-    except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
-    
+                account_details.append(0)
+            final_list.append(account_details)
+
+        return JsonResponse({"items": final_list})
+
 
 @csrf_exempt
 def user_edit(request):
@@ -327,10 +346,10 @@ def device_create(request):
                 print(random_id)
                 if not Device.objects.filter(device_id=random_id).exists():
                     # params = {'host':'20.244.48.88','database':'iotdb','user':'bariflolabs','password':'bariflo123'}
-                    conn = connection.cursor()  
-                    print('Connected to the PostgreSQL database in device creation part...') 
+                    # conn = connection.cursor()  
+                    # print('Connected to the PostgreSQL database in device creation part...') 
                     # cur = conn.cursor() 
-                    conn.execute(f'CREATE TABLE device_{random_id}(device BIGINT NOT NULL,param_type VARCHAR NOT NULL,param_value INTEGER NOT NULL,date DATE NOT NULL,time TIME NOT NULL);')
+                    # conn.execute(f'CREATE TABLE device_{random_id}(device BIGINT NOT NULL,param_type VARCHAR NOT NULL,param_value INTEGER NOT NULL,date DATE NOT NULL,time TIME NOT NULL);')
                     # cur.close() 
                     # conn.commit() 
                     new_device = Device(device_name=device_nm, device_type=device_type_instance, account=account, device_id=random_id)
@@ -1033,35 +1052,93 @@ def forgot_password_sent_to_user(request,user_email):
         return JsonResponse({"message":"password sent to the user"})
     else:
         return JsonResponse({"error":"entered otp incorrect"})
+    
 @csrf_exempt
 def thermal_actual_image(request,mobno,user_given_day):
     if request.method == 'GET':
-        instance = JSONParser().parse(request)
-        diff_time = timezone.now()-timedelta(days=user_given_day) 
+        # instance = JSONParser().parse(request)
+        diff_time = timezone.now()-timedelta(days=(user_given_day)) 
         str_diff_time = diff_time.strftime("%Y-%m-%d") 
-        # try:
-        data = Thermal_Actual_Image.objects.filter(user=mobno,date = str_diff_time).order_by('-id')[:2]
-        for i in data:
-            a = i.image
+        try:
+            data = Thermal_Actual_Image.objects.filter(user=mobno,date__gte = str_diff_time).order_by('-id')[:2]
+            a = [f"http://20.244.51.20/media/{i.image.name}" for i in data]
+            return JsonResponse({"message":(a)})
+        except:
+            return JsonResponse({"eror":"AN ERROR OCCURED"},status=400)
 
-            print(i.image)
-        # except:
-        #     return JsonResponse({"eror":"AN ERROR OCCURED"},status=400)
-            
-from app1.tests import testing 
+from app1.ocr import testing 
+@csrf_exempt
+def ocr_process(request):
+    if request.method == 'POST':
+        instance = JSONParser().parse(request)
+        mobno = instance.get('mobno')
+        img_name = instance.get('imgname')
+        try:
+            processed_data = testing(mobno,img_name)
+            return JsonResponse({"message": processed_data})
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+
 @api_view(['POST'])
 @csrf_exempt
 def ocr(request):
     if request.method == 'POST':
         img = request.data['image']
-        print(img)
         mobno = request.data['mobno']
         user_data = User.objects.get(Mobno=mobno)
-        data = OcrImage(image=img,user=user_data)
+        data = OcrImage(image=img,user=user_data,name=user_data.Name)
         data.save()
-        data = testing(user_data)
-        return JsonResponse({"message": data})
+        return JsonResponse({"message": "Image Uploaded"})
 
+@csrf_exempt
+def admin_side_ocr_view(request):
+    if request.method == 'GET':
+        try:
+            data = OcrImage.objects.all()
+            result = []
+            for item in data:
+                result.append([item.image.name, item.name, item.user.Mobno])
+            return JsonResponse(result, safe=False)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+            
+@csrf_exempt
+def userside_graph_view(request,mobno):
+    if request.method == 'GET':
+        try:
+            data_user = User.objects.get(Mobno=mobno)
+            data_accnt = Account.objects.filter(user=data_user)
+            final_data = {}
+            for i in data_accnt:
+                data_device = Device.objects.filter(account=(i.Account_id))
+                print(data_device)
+                for i in data_device:
+                    data = {i.device_id : i.sensors}
+                    final_data.update(data)
+            return JsonResponse((final_data),safe=False)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
 
-
-
+@csrf_exempt
+def userside_device_view(request,mobno):
+    if request.method == 'GET':
+        try:
+            data_user = User.objects.get(Mobno=mobno)
+            data_accnt = Account.objects.filter(user=data_user)
+            list_data = []
+            for i in data_accnt:
+                data = Device.objects.filter(account=(i.Account_id))
+                for i in data:
+                    device_type = DeviceType.objects.filter(Name=i.device_type)
+                    for types in device_type:
+                        final_output = [i.device_name,i.device_id,types.controls[0]['button']['virtual_pin']]
+                        list_data.append(final_output)
+            return JsonResponse((list_data),safe=False)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=500)
+        
+@csrf_exempt
+def test(request,mobno):
+    if request.method == 'GET':
+        
+        return JsonResponse({"msg"})     

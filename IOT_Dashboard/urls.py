@@ -50,6 +50,12 @@ urlpatterns = [
     path('token_verification/',views.token_verification),
     path('thermal_img/<mobno>/<int:user_given_day>/',views.thermal_actual_image),
     path('ocr/',views.ocr),
+    path('admin_side_ocr_view/',views.admin_side_ocr_view),
+    path('ocr_process/',views.ocr_process),
+    path('userside_graph_view/<mobno>/',views.userside_graph_view),
+    path('userside_device_view/<mobno>/',views.userside_device_view),
+    path('test/<mobno>/',views.test),
+    
     
 ]
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)#imp for what you want to achieve.

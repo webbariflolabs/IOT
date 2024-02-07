@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import *
+from django.contrib.gis import admin
 # Register your models here.
 
 @admin.register(Registration)
@@ -19,12 +20,12 @@ class User(admin.ModelAdmin):
     list_display = ['Name','Email','Mobno','password','Adhaar','user_category','user_pic','user_docs','token']
 
 @admin.register(Account)
-class Account(admin.ModelAdmin):
-    list_display = ['account_name','Account_id','user']
+class Account(admin.GISModelAdmin):
+    list_display = ['account_name','Account_id','area','location','user']
 
 @admin.register(Device)
 class Device(admin.ModelAdmin):
-    list_display = ['device_id','device_name','device_type','account']
+    list_display = ['device_id','device_name','device_type','account','sensors']
 
 @admin.register(Data)
 class Data(admin.ModelAdmin):
@@ -40,6 +41,6 @@ class Thermal_Actual_Image(admin.ModelAdmin):
 
 @admin.register(OcrImage)
 class OcrImage(admin.ModelAdmin):
-    list_display = ['id','image','user']   
+    list_display = ['id','image','name','user']   
 
 
